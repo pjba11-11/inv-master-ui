@@ -1,106 +1,81 @@
 import { NextResponse } from 'next/server';
 
-// Mock data for materials
+// Shape matches MaterialDTO — no description or supplier columns in the backend schema.
 let materials = [
   {
-    id: '1',
-    name: 'Steel Rod',
-    description: 'Carbon steel rod, 10mm diameter, 2m length',
+    id: 1,
+    companyId: 1,
+    materialName: 'Steel Rod',
     unit: 'kg',
     currentPrice: 15.50,
-    supplier: 'SteelWorks Inc.',
-    isActive: true
+    active: true,
+    createdAt: '2024-01-01T08:00:00Z',
+    updatedAt: '2024-01-01T08:00:00Z',
+    deletedAt: null as string | null,
   },
   {
-    id: '2',
-    name: 'Copper Wire',
-    description: 'Insulated copper wire, 12 AWG, 100m roll',
+    id: 2,
+    companyId: 1,
+    materialName: 'Copper Wire',
     unit: 'm',
     currentPrice: 2.75,
-    supplier: 'ElectroSupply Co.',
-    isActive: true
+    active: true,
+    createdAt: '2024-01-15T09:00:00Z',
+    updatedAt: '2024-01-15T09:00:00Z',
+    deletedAt: null as string | null,
   },
   {
-    id: '3',
-    name: 'Plastic Sheet',
-    description: 'PVC sheet, 4x8 ft, 3mm thickness',
+    id: 3,
+    companyId: 1,
+    materialName: 'Plastic Sheet',
     unit: 'sqm',
     currentPrice: 12.00,
-    supplier: 'Plastics Plus',
-    isActive: false
-  }
-];
-
-// Mock data for price history
-let priceHistory = [
-  {
-    id: '1',
-    materialId: '1',
-    price: 14.00,
-    effectiveDate: '2024-01-01',
-    recordedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days ago
+    active: false,
+    createdAt: '2024-02-01T10:00:00Z',
+    updatedAt: '2024-02-01T10:00:00Z',
+    deletedAt: null as string | null,
   },
-  {
-    id: '2',
-    materialId: '1',
-    price: 15.50,
-    effectiveDate: '2024-02-01',
-    recordedAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() // 15 days ago
-  },
-  {
-    id: '3',
-    materialId: '1',
-    price: 16.00,
-    effectiveDate: '2024-03-01',
-    recordedAt: new Date().toISOString() // today
-  },
-  {
-    id: '4',
-    materialId: '2',
-    price: 2.50,
-    effectiveDate: '2024-01-15',
-    recordedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString() // 45 days ago
-  },
-{
-    id: '5',
-    materialId: '2',
-    price: 2.75,
-    effectiveDate: '2024-03-01',
-    recordedAt: new Date().toISOString() // today
-  }
 ];
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search');
   const active = searchParams.get('active');
-  
-  let filteredMaterials = materials;
-  
+
+  let result = materials.filter(m => !m.deletedAt);
+
   if (search) {
-    const searchLower = search.toLowerCase();
-    filteredMaterials = filteredMaterials.filter(material => 
-      material.name.toLowerCase().includes(searchLower) ||
-      material.description.toLowerCase().includes(searchLower) ||
-      material.unit.toLowerCase().includes(searchLower) ||
-      (material.supplier && material.supplier.toLowerCase().includes(searchLower))
-    );
+    const q = search.toLowerCase();
+    result = result.filter(m => m.materialName.toLowerCase().includes(q) || m.unit.toLowerCase().includes(q));
   }
-  
+
   if (active !== null) {
-    const isActive = active === 'true';
-    filteredMaterials = filteredMaterials.filter(material => material.isActive === isActive);
+    result = result.filter(m => m.active === (active === 'true'));
   }
-  
-  return NextResponse.json(filteredMaterials);
+
+  return NextResponse.json(result);
 }
 
 export async function POST(request: Request) {
-  const newMaterial = await request.json();
-  const material = {
-    id: Date.now().toString(),
-    ...newMaterial
-  };
-  materials.push(material);
-  return NextResponse.json(material, { status: 201 });
+  try {
+    const body = await request.json();
+    if (!body.materialName || !body.unit) {
+      return NextResponse.json({ error: 'materialName and unit are required' }, { status: 400 });
+    }
+    const newMaterial = {
+      id: Date.now(),
+      companyId: body.companyId || 1,
+      materialName: body.materialName,
+      unit: body.unit,
+      currentPrice: body.currentPrice ?? 0,
+      active: body.active !== undefined ? body.active : true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      deletedAt: null as string | null,
+    };
+    materials.push(newMaterial);
+    return NextResponse.json(newMaterial, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+  }
 }

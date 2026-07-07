@@ -1,118 +1,72 @@
 import { NextResponse } from 'next/server';
 
-// Mock user data (same as in login route)
-let users = [
-  {
-    id: '1',
-    email: 'admin@company.com',
-    password: 'admin123',
-    name: 'Admin User',
-    role: 'ADMIN',
-    companyId: '1'
-  },
-  {
-    id: '2',
-    email: 'manager@company.com',
-    password: 'manager123',
-    name: 'Manager User',
-    role: 'MANAGER',
-    companyId: '1'
-  },
-  {
-    id: '3',
-    email: 'sales@company.com',
-    password: 'sales123',
-    name: 'Sales User',
-    role: 'SALES',
-    companyId: '1'
-  }
-];
+// Backend exposes two separate register endpoints:
+//   POST /auth/company/register  — RegisterCompanyRequest
+//   POST /auth/user/register     — RegisterUserRequest
+//
+// This single Next.js route handles both via a `type` discriminator in the body.
 
-// Mock company data
 let companies = [
-  {
-    id: '1',
-    name: 'Default Company',
-    email: 'info@company.com',
-    phone: '123-456-7890',
-    address: '123 Company Street\nCity, State 12345\nUSA',
-    gst: 'GST123456789',
-    createdAt: '2023-01-15T09:30:00Z'
-  }
+  { id: 1, companyName: 'Default Company', gstNumber: 'GST123456789', phone: '123-456-7890', email: 'info@company.com', address: '123 Company Street', bankName: '', accountNumber: '', ifsc: '', upiId: '', logoUrl: '' },
 ];
 
+let users = [
+  { id: 1, companyId: 1, name: 'Admin User', email: 'admin@example.com', password: 'admin123', role: 'ADMIN' },
+];
+
+// POST /api/auth/register
+// body for company: { type: 'company', companyName, gstNumber, phone, email, address, bankName, accountNumber, ifsc, upiId, logoUrl }
+// body for user:    { type: 'user', companyId, name, email, password, role }
 export async function POST(request: Request) {
   try {
-    const { 
-      email, 
-      password, 
-      name,
-      companyName,
-      companyEmail,
-      companyPhone,
-      companyAddress,
-      companyGst
-    } = await request.json();
-    
-    // Validate input
-    if (!email || !password || !name) {
-      return NextResponse.json(
-        { error: 'Email, password, and name are required' },
-        { status: 400 }
-      );
-    }
-    
-    // Check if user already exists
-    if (users.some(u => u.email === email)) {
-      return NextResponse.json(
-        { error: 'User with this email already exists' },
-        { status: 400 }
-      );
-    }
-    
-    // Create new company if provided
-    let companyId = '1'; // Default to existing company
-    if (companyName) {
+    const body = await request.json();
+
+    if (body.type === 'company') {
+      const { companyName, gstNumber, phone, email, address, bankName, accountNumber, ifsc, upiId, logoUrl } = body;
+
+      if (!companyName || !email) {
+        return NextResponse.json({ error: 'companyName and email are required' }, { status: 400 });
+      }
+
       const newCompany = {
-        id: Date.now().toString(),
-        name: companyName,
-        email: companyEmail || '',
-        phone: companyPhone || '',
-        address: companyAddress || '',
-        gst: companyGst || '',
-        createdAt: new Date().toISOString()
+        id: Date.now(),
+        companyName,
+        gstNumber: gstNumber || '',
+        phone: phone || '',
+        email,
+        address: address || '',
+        bankName: bankName || '',
+        accountNumber: accountNumber || '',
+        ifsc: ifsc || '',
+        upiId: upiId || '',
+        logoUrl: logoUrl || '',
       };
       companies.push(newCompany);
-      companyId = newCompany.id;
+
+      return NextResponse.json({ message: 'Company registered successfully', id: newCompany.id }, { status: 201 });
     }
-    
-    // Create new user
-    const newUser = {
-      id: Date.now().toString(),
-      email,
-      password, // In real app, this would be hashed
-      name,
-      role: 'ADMIN', // First user of a company is admin
-      companyId
-    };
-    
+
+    // Default: user register
+    const { companyId, name, email, password, role } = body;
+
+    if (!companyId || !name || !email || !password || !role) {
+      return NextResponse.json({ error: 'companyId, name, email, password and role are required' }, { status: 400 });
+    }
+
+    if (users.some(u => u.email === email)) {
+      return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
+    }
+
+    const validRoles = ['ADMIN', 'MANAGER', 'SALES'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json({ error: `role must be one of: ${validRoles.join(', ')}` }, { status: 400 });
+    }
+
+    const newUser = { id: Date.now(), companyId: Number(companyId), name, email, password, role };
     users.push(newUser);
-    
-    // In a real app, we would create a JWT token or session
-    // For this mock, we'll set a simple cookie
-    // Note: In a real registration flow, we might not log in automatically
-    
-    // Return user data (without password)
-    const { password: _, ...userWithoutPassword } = newUser;
-    
-    return NextResponse.json({
-      message: 'Registration successful',
-      user: userWithoutPassword
-    }, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Invalid request data' },
-      { status: 400 }
-    );
+
+    return NextResponse.json({ message: 'User registered successfully', id: newUser.id }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
   }
 }
