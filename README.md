@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# inv-master-ui
+
+Frontend for the Invoice Master application — built with **Next.js 16** and **React 19**.
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| UI | React 19, Tailwind CSS |
+| API | Next.js Route Handlers (mock data, wired to match backend DTOs) |
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── (auth)/           # Login, Register, Forgot Password
+│   ├── (dashboard)/      # Dashboard, Invoices, Customers, Products, Materials, Companies, Reports, Settings
+│   └── api/              # Route handlers — mock data with field names matching backend DTOs
+│       ├── auth/         # login, logout, register
+│       ├── companies/    # company profile + [id]/settings
+│       ├── customers/    # CRUD + [id]/notes
+│       ├── invoices/     # CRUD + [id]/line-items, [id]/payments, [id]/pdf
+│       ├── materials/    # CRUD + [id]/price-history
+│       └── products/     # CRUD
+└── components/
+    ├── forms/            # CustomerForm, ProductForm, MaterialForm, CompanyForm, InvoiceForm
+    ├── layout/           # Sidebar, Navbar, Breadcrumbs
+    ├── ui/               # Button, Input, Select, Card, Badge, etc.
+    └── widgets/          # RevenueChart, InvoicesTable, StatCard
+```
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Default mock credentials
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@example.com | admin123 |
+| Manager | manager@example.com | manager123 |
+| Sales | sales@example.com | sales123 |
 
-## Learn More
+## API → Backend Mapping
 
-To learn more about Next.js, take a look at the following resources:
+Route handlers under `src/app/api/` use in-memory mock data. Field names match the Spring Boot backend DTOs exactly so each handler can be replaced with a `fetch` call once the backend is running.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| UI Route | Backend Endpoint |
+|---|---|
+| `POST /api/auth/login` | `POST /auth/login` → `{ accessToken, refreshToken }` |
+| `POST /api/auth/register` (type: company) | `POST /auth/company/register` |
+| `POST /api/auth/register` (type: user) | `POST /auth/user/register` |
+| `GET/PUT /api/companies` | Company entity |
+| `GET/PUT /api/companies/[id]/settings` | Settings entity |
+| `GET/POST /api/customers` | Customers entity |
+| `GET/POST /api/materials` | Materials entity |
+| `GET/POST /api/products` | `GET/POST /products` (ProductFullResponse) |
+| `GET/POST /api/invoices` | Invoices entity |
+| `GET/POST /api/invoices/[id]/line-items` | InvoiceLineItems entity |
+| `GET/POST /api/invoices/[id]/payments` | Payments entity |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Backend
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [inv-master-001](https://github.com/pjba11-11/inv-master-001) for the Spring Boot backend.
