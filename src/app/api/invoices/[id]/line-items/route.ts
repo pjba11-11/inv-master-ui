@@ -1,131 +1,42 @@
 import { NextResponse } from 'next/server';
 
-// Invoice status types
-type InvoiceStatus = 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue';
-
-// Mock data for invoices (same as in route.ts)
-let invoices = [
-  {
-    id: '1',
-    number: 'INV-001',
-    date: '2023-05-15',
-    customerName: 'Acme Corp',
-    customerEmail: 'info@acme.com',
-    customerAddress: '123 Business Ave, Suite 100\nNew York, NY 10001\nUSA',
-    items: [
-      { id: '1', description: 'Web Development Services', quantity: 10, rate: 100, tax: 15 },
-      { id: '2', description: 'UI/UX Design', quantity: 5, rate: 150, tax: 15 },
-      { id: '3', description: 'Project Management', quantity: 8, rate: 75, tax: 15 }
-    ],
-    discount: 10,
-    taxRate: 15,
-    subtotal: 2475,
-    taxAmount: 371.25,
-    total: 2558.25,
-    status: 'sent' as InvoiceStatus,
-    notes: 'Thank you for your business!',
-    terms: 'Payment due within 30 days. Late payments subject to 1.5% monthly fee.',
-    createdAt: '2023-05-10T10:30:00Z',
-    updatedAt: '2023-05-15T14:22:00Z',
-    payments: [
-      { id: 'pay1', amount: 500, date: '2023-05-20', method: 'Bank Transfer', reference: 'TXN123456' }
-    ]
-  },
-  {
-    id: '2',
-    number: 'INV-002',
-    date: '2023-05-16',
-    customerName: 'Widget Inc',
-    customerEmail: 'sales@widgetinc.com',
-    customerAddress: '456 Industrial Blvd\nChicago, IL 60601\nUSA',
-    items: [
-      { id: '4', description: 'Software Licenses', quantity: 5, rate: 200, tax: 8 },
-      { id: '5', description: 'Implementation Services', quantity: 20, rate: 75, tax: 8 }
-    ],
-    discount: 5,
-    taxRate: 8,
-    subtotal: 2500,
-    taxAmount: 200,
-    total: 2375,
-    status: 'pending' as InvoiceStatus,
-    notes: 'Please contact us for any questions.',
-    terms: 'Net 30 days.',
-    createdAt: '2023-05-11T14:15:00Z',
-    updatedAt: '2023-05-16T09:30:00Z',
-    payments: []
-  }
+// Shape matches InvoiceLineItemDTO: productId, productName, quantity, unitPrice, total.
+// (no free-text description — items reference a product FK)
+let lineItems = [
+  { id: 1, invoiceId: 1, productId: 1, productName: 'Steel Frame',          quantity: 10, unitPrice: 180.00, total: 1800.00 },
+  { id: 2, invoiceId: 1, productId: 2, productName: 'Copper Cable Assembly', quantity:  5, unitPrice: 135.00, total:  675.00 },
+  { id: 3, invoiceId: 2, productId: 1, productName: 'Steel Frame',           quantity:  8, unitPrice: 180.00, total: 1440.00 },
+  { id: 4, invoiceId: 2, productId: 2, productName: 'Copper Cable Assembly', quantity:  8, unitPrice: 132.50, total: 1060.00 },
 ];
 
-// Helper function to calculate invoice totals
-const calculateInvoiceTotals = (items: any[], discount: number, taxRate: number) => {
-  const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
-  const taxAmount = (subtotal * taxRate) / 100;
-  const discountAmount = (subtotal * discount) / 100;
-  const total = subtotal + taxAmount - discountAmount;
-  
-  return {
-    subtotal: parseFloat(subtotal.toFixed(2)),
-    taxAmount: parseFloat(taxAmount.toFixed(2)),
-    discountAmount: parseFloat(discountAmount.toFixed(2)),
-    total: parseFloat(total.toFixed(2))
-  };
-};
-
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const invoice = invoices.find(inv => inv.id === params.id);
-  if (!invoice) {
-    return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
-  }
-  return NextResponse.json(invoice.items);
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const items = lineItems.filter(li => li.invoiceId === Number(id));
+  return NextResponse.json(items);
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const invoiceIndex = invoices.findIndex(inv => inv.id === params.id);
-    if (invoiceIndex === -1) {
-      return NextResponse.json({ error: 'Invoice not found' }, { status: 404 });
+    const { id } = await params;
+    const body = await request.json();
+
+    if (!body.productId || !body.quantity || !body.unitPrice) {
+      return NextResponse.json({ error: 'productId, quantity, and unitPrice are required' }, { status: 400 });
     }
-    
-    const invoice = invoices[invoiceIndex];
-    const newItem = await request.json();
-    
-    // Validate required fields
-    if (!newItem.description || !newItem.quantity || !newItem.rate) {
-      return NextResponse.json(
-        { error: 'Description, quantity, and rate are required' },
-        { status: 400 }
-      );
-    }
-    
-    // Add the new item
-    const itemWithId = {
-      id: Date.now().toString(),
-      ...newItem
+
+    const newItem = {
+      id: Date.now(),
+      invoiceId: Number(id),
+      productId: Number(body.productId),
+      productName: body.productName || '',
+      quantity: Number(body.quantity),
+      unitPrice: Number(body.unitPrice),
+      total: parseFloat((Number(body.quantity) * Number(body.unitPrice)).toFixed(2)),
     };
-    
-    invoice.items.push(itemWithId);
-    
-    // Recalculate totals
-    const { subtotal, taxAmount, discountAmount, total } = calculateInvoiceTotals(
-      invoice.items,
-      invoice.discount,
-      invoice.taxRate
-    );
-    
-    invoice.subtotal = subtotal;
-    invoice.taxAmount = taxAmount;
-    invoice.discountAmount = discountAmount;
-    invoice.total = total;
-    invoice.updatedAt = new Date().toISOString();
-    
-    // Update the invoice in the array
-    invoices[invoiceIndex] = invoice;
-    
-    return NextResponse.json(itemWithId, { status: 201 });
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Invalid request data' },
-      { status: 400 }
-    );
+
+    lineItems.push(newItem);
+    return NextResponse.json(newItem, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
   }
 }
