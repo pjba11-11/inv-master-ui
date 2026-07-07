@@ -1,174 +1,99 @@
 import { useForm } from './use-form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
+// Fields match MaterialDTO — no description or supplier in the backend schema.
 interface MaterialFormValues {
-  name: string;
-  description: string;
+  materialName: string;
   unit: string;
   currentPrice: number;
-  supplier: string;
-  isActive: boolean;
+  active: boolean;
 }
 
-export const MaterialForm = ({ 
-  onSubmit, 
+export const MaterialForm = ({
+  onSubmit,
   initialData,
-  isEditMode = false
+  isEditMode = false,
 }: {
   onSubmit: (data: any) => Promise<void> | void;
   initialData?: Partial<MaterialFormValues>;
   isEditMode?: boolean;
 }) => {
   const defaultValues: MaterialFormValues = {
-    name: '',
-    description: '',
+    materialName: '',
     unit: '',
     currentPrice: 0,
-    supplier: '',
-    isActive: true,
-    ...initialData
+    active: true,
+    ...initialData,
   };
 
   const validate = (values: MaterialFormValues) => {
     const errors: Partial<Record<keyof MaterialFormValues, string>> = {};
-    
-    if (!values.name.trim()) {
-      errors.name = 'Material name is required';
-    }
-
-    if (!values.unit.trim()) {
-      errors.unit = 'Unit is required';
-    }
-
-    if (values.currentPrice < 0) {
-      errors.currentPrice = 'Current price must be greater than or equal to zero';
-    }
-    
+    if (!values.materialName.trim()) errors.materialName = 'Material name is required';
+    if (!values.unit.trim()) errors.unit = 'Unit is required';
+    if (values.currentPrice < 0) errors.currentPrice = 'Price must be ≥ 0';
     return errors as FormErrors;
   };
 
-  const {
-    values,
-    errors,
-    handleChange,
-    handleBlur,
-    handleSubmit,
-    isSubmitting,
-    resetForm
-  } = useForm<MaterialFormValues>({
-    initialValues: defaultValues,
-    validate,
-    onSubmit
-  });
+  const { values, errors, handleChange, handleBlur, handleSubmit, isSubmitting, resetForm } =
+    useForm<MaterialFormValues>({ initialValues: defaultValues, validate, onSubmit });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">Material Name</label>
+          <label className="block text-sm font-medium text-text-muted mb-1">Material Name *</label>
           <Input
-            value={values.name}
-            onChange={(e) => handleChange('name', e.target.value)}
-            onBlur={() => handleBlur('name')}
+            value={values.materialName}
+            onChange={(e) => handleChange('materialName', e.target.value)}
+            onBlur={() => handleBlur('materialName')}
             placeholder="Enter material name"
-            className={errors.name ? '' : ''}
           />
-          {errors.name && (
-            <p className="mt-1 text-sm text-error">{errors.name}</p>
-          )}
+          {errors.materialName && <p className="mt-1 text-sm text-error">{errors.materialName}</p>}
         </div>
-        
+
         <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">Description</label>
-          <Textarea
-            value={values.description}
-            onChange={(e) => handleChange('description', e.target.value)}
-            onBlur={() => handleBlur('description')}
-            placeholder="Enter material description"
-            rows={3}
-            className={errors.description ? '' : ''}
-          />
-          {errors.description && (
-            <p className="mt-1 text-sm text-error">{errors.description}</p>
-          )}
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">Unit</label>
+          <label className="block text-sm font-medium text-text-muted mb-1">Unit *</label>
           <Input
             value={values.unit}
             onChange={(e) => handleChange('unit', e.target.value)}
             onBlur={() => handleBlur('unit')}
-            placeholder="Enter unit (e.g., kg, pcs, liters)"
-            className={errors.unit ? '' : ''}
+            placeholder="e.g. kg, m, pcs"
           />
-          {errors.unit && (
-            <p className="mt-1 text-sm text-error">{errors.unit}</p>
-          )}
+          {errors.unit && <p className="mt-1 text-sm text-error">{errors.unit}</p>}
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-text-muted mb-1">Current Price</label>
-          <div className="flex items-center">
-            <span className="mr-2">$</span>
-            <Input
-              type="number"
-              value={values.currentPrice.toString()}
-              onChange={(e) => {
-                const value = parseFloat(e.target.value) || 0;
-                handleChange('currentPrice', value);
-              }}
-              onBlur={() => handleBlur('currentPrice')}
-              placeholder="0.00"
-              className={errors.currentPrice ? '' : ''}
-            />
-          </div>
-          {errors.currentPrice && (
-            <p className="mt-1 text-sm text-error">{errors.currentPrice}</p>
-          )}
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">Supplier</label>
           <Input
-            value={values.supplier}
-            onChange={(e) => handleChange('supplier', e.target.value)}
-            onBlur={() => handleBlur('supplier')}
-            placeholder="Enter supplier name (optional)"
+            type="number"
+            value={values.currentPrice.toString()}
+            onChange={(e) => handleChange('currentPrice', parseFloat(e.target.value) || 0)}
+            onBlur={() => handleBlur('currentPrice')}
+            placeholder="0.00"
           />
+          {errors.currentPrice && <p className="mt-1 text-sm text-error">{errors.currentPrice}</p>}
         </div>
-        
+
         <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">Is Active</label>
-          <div className="flex items-center">
+          <label className="block text-sm font-medium text-text-muted mb-1">Active</label>
+          <div className="flex items-center mt-2">
             <input
               type="checkbox"
-              checked={values.isActive}
-              onChange={(e) => handleChange('isActive', e.target.checked)}
-              className="h-4 w-4 text-primary-500 focus:ring-primary-500 border-gray-300 rounded"
+              checked={values.active}
+              onChange={(e) => handleChange('active', e.target.checked)}
+              className="h-4 w-4 text-primary-500 border-gray-300 rounded"
             />
-            <span className="ml-2 text-text-muted">Active material</span>
+            <span className="ml-2 text-text-muted">Material is active</span>
           </div>
         </div>
       </div>
-      
-      <div className="flex justify-end pt-4">
+
+      <div className="flex justify-end gap-3 pt-4">
         {!isEditMode && (
-          <Button 
-            variant="secondary" 
-            onClick={() => resetForm()}
-          >
-            Cancel
-          </Button>
+          <Button variant="secondary" onClick={() => resetForm()}>Cancel</Button>
         )}
-        <Button 
-          variant="primary" 
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
+        <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : isEditMode ? 'Update Material' : 'Create Material'}
         </Button>
       </div>
