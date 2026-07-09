@@ -4,11 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-// Matches CreateProductRequest — products are priced via manufacturingCost / sellingPrice,
-// not a flat unitPrice. Materials are required (product_materials join table on the backend).
+// Matches CreateProductRequest / MaterialRequest — hsnCode is optional.
 interface MaterialEntry {
   id?: number;
   materialName: string;
+  hsnCode: string;
   unit: string;
   currentPrice: number;
 }
@@ -33,7 +33,7 @@ export const ProductForm = ({
   isEditMode?: boolean;
 }) => {
   const [materials, setMaterials] = useState<MaterialEntry[]>(
-    initialMaterials.length > 0 ? initialMaterials : [{ materialName: '', unit: '', currentPrice: 0 }]
+    initialMaterials.length > 0 ? initialMaterials : [{ materialName: '', hsnCode: '', unit: '', currentPrice: 0 }]
   );
 
   const defaultValues: ProductFormValues = {
@@ -56,7 +56,7 @@ export const ProductForm = ({
     useForm<ProductFormValues>({ initialValues: defaultValues, validate, onSubmit: (data) => onSubmit({ ...data, materials }) });
 
   const addMaterial = () =>
-    setMaterials(prev => [...prev, { materialName: '', unit: '', currentPrice: 0 }]);
+    setMaterials(prev => [...prev, { materialName: '', hsnCode: '', unit: '', currentPrice: 0 }]);
 
   const removeMaterial = (index: number) =>
     setMaterials(prev => prev.filter((_, i) => i !== index));
@@ -139,13 +139,21 @@ export const ProductForm = ({
         </div>
 
         {materials.map((mat, idx) => (
-          <div key={idx} className="grid grid-cols-1 gap-3 md:grid-cols-4 mb-3 items-end">
+          <div key={idx} className="grid grid-cols-1 gap-3 md:grid-cols-5 mb-3 items-end">
             <div>
               <label className="block text-sm font-medium text-text-muted mb-1">Material Name</label>
               <Input
                 value={mat.materialName}
                 onChange={(e) => updateMaterial(idx, 'materialName', e.target.value)}
                 placeholder="e.g. Steel Rod"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text-muted mb-1">HSN Code</label>
+              <Input
+                value={mat.hsnCode}
+                onChange={(e) => updateMaterial(idx, 'hsnCode', e.target.value)}
+                placeholder="e.g. 7208"
               />
             </div>
             <div>
