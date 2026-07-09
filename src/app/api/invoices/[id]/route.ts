@@ -11,9 +11,11 @@ let invoices = [
     createdById: 1,
     invoiceDate: '2024-05-15',
     subtotal: 2475.00,
-    gst: 445.50,
+    cgst: 222.75,
+    sgst: 222.75,
     discount: 247.50,
     grandTotal: 2673.00,
+    poNumber: '',
     status: 'GENERATED' as InvoiceStatus,
     remarks: 'Thank you for your business!',
     createdAt: '2024-05-10T10:30:00Z',
@@ -27,9 +29,11 @@ let invoices = [
     createdById: 1,
     invoiceDate: '2024-05-16',
     subtotal: 2500.00,
-    gst: 450.00,
+    cgst: 225.00,
+    sgst: 225.00,
     discount: 0,
     grandTotal: 2950.00,
+    poNumber: 'PO-2024-002',
     status: 'PARTIALLY_PAID' as InvoiceStatus,
     remarks: '',
     createdAt: '2024-05-11T14:15:00Z',
@@ -51,16 +55,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const body = await request.json();
     const subtotal: number = body.subtotal ?? invoices[index].subtotal;
-    const gst: number = body.gst ?? invoices[index].gst;
+    const cgst: number = body.cgst ?? invoices[index].cgst;
+    const sgst: number = body.sgst ?? invoices[index].sgst;
     const discount: number = body.discount ?? invoices[index].discount;
     invoices[index] = {
       ...invoices[index],
       ...body,
       id: Number(id),
       subtotal,
-      gst,
+      cgst,
+      sgst,
       discount,
-      grandTotal: parseFloat((subtotal + gst - discount).toFixed(2)),
+      grandTotal: parseFloat((subtotal + cgst + sgst - discount).toFixed(2)),
       updatedAt: new Date().toISOString(),
     };
     return NextResponse.json(invoices[index]);
