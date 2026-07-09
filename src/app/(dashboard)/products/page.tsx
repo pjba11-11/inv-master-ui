@@ -1,64 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
-// Mock data for products
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Wireless Mouse',
-    description: 'Ergonomic wireless mouse with long battery life',
-    sku: 'WM-001',
-    category: 'Electronics',
-    unitPrice: 29.99,
-    taxable: true,
-    isActive: true
-  },
-  {
-    id: '2',
-    name: 'Office Chair',
-    description: 'Ergonomic office chair with lumbar support',
-    sku: 'OC-005',
-    category: 'Furniture',
-    unitPrice: 199.99,
-    taxable: true,
-    isActive: true
-  },
-  {
-    id: '3',
-    name: 'Notebook A4',
-    description: 'Pack of 5 ruled notebooks, A4 size',
-    sku: 'NB-A4-5',
-    category: 'Stationery',
-    unitPrice: 12.50,
-    taxable: false,
-    isActive: true
-  }
-];
+interface Product {
+  productId: number;
+  productName: string;
+  description: string;
+  active: boolean;
+  manufacturingCost: number;
+  sellingPrice: number;
+  profitMargin: number;
+  materials: { materialId: number; materialName: string; unit: string; hsnCode: string; currentPrice: number }[];
+}
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // Filter products based on search term
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    fetch('/api/products')
+      .then(r => r.json())
+      .then(data => { setProducts(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const filtered = products.filter(p =>
+    p.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.description || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDeleteProduct = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      setProducts(products.filter(p => p.id !== id));
-      alert('Product deleted successfully!');
-    }
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Delete this product?')) return;
+    await fetch(`/api/products/${id}`, { method: 'DELETE' });
+    setProducts(prev => prev.filter(p => p.productId !== id));
   };
+
+  if (loading) return <div className="text-center py-8 text-text-muted">Loading...</div>;
 
   return (
     <div className="space-y-6">
@@ -68,14 +51,12 @@ export default function ProductsPage() {
         showBreadcrumbs={true}
         breadcrumbItems={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Products', href: '/dashboard/products' }
+          { label: 'Products', href: '/dashboard/products' },
         ]}
       >
         <div className="flex flex-wrap items-center gap-4">
           <Link href="/dashboard/products/add">
-            <Button variant="primary">
-              Add Product
-            </Button>
+            <Button variant="primary">Add Product</Button>
           </Link>
           <Input
             type="search"
@@ -87,65 +68,57 @@ export default function ProductsPage() {
         </div>
       </PageHeader>
 
-      <div className="grid gap-6">
-        <Card>
-          <div className="space-y-4">
-            <div className="border-b border-surface-2 pb-4">
-              <h2 className="text-lg font-medium text-text-primary">Product List</h2>
-            </div>
-            {filteredProducts.length > 0 ? (
-              <table className="w-full border-spacing-0">
-                <thead>
-                  <tr className="bg-surface-2">
-                    <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Name</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">SKU</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Category</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Unit Price</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Taxable</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Status</th>
-                    <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-2">
-                  {filteredProducts.map(product => (
-                    <tr key={product.id} className="hover:bg-surface-1">
-                      <td className="px-4 py-4 text-text-primary>{product.name}</td>
-                      <td className="px-4 py-4 text-text-primary>{product.sku}</td>
-                      <td className="px-4 py-4 text-text-primary>{product.category}</td>
-                      <td className="px-4 py-4 text-text-primary>${product.unitPrice.toFixed(2)}</td>
-                      <td className="px-4 py-4 text-text-primary>{product.taxable ? 'Yes' : 'No'}</td>
-                      <td className="px-4 py-4 text-text-primary>{product.isActive ? 'Active' : 'Inactive'}</td>
-                      <td className="px-4 py-4 text-sm space-x-2">
-                        <Link href={`/dashboard/products/${product.id}`}>
-                          <Button variant="outline" size="sm">
-                            View
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/products/edit/${product.id}`}>
-                          <Button variant="outline" size="sm">
-                            Edit
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteProduct(product.id)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-text-muted">No products found</p>
-              </div>
-            )}
+      <Card>
+        <div className="space-y-4">
+          <div className="border-b border-surface-2 pb-4">
+            <h2 className="text-lg font-medium text-text-primary">Product List</h2>
           </div>
-        </Card>
-      </div>
+          {filtered.length > 0 ? (
+            <table className="w-full border-spacing-0">
+              <thead>
+                <tr className="bg-surface-2">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Name</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Mfg. Cost</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Selling Price</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Margin</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Materials</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-2">
+                {filtered.map(p => (
+                  <tr key={p.productId} className="hover:bg-surface-1">
+                    <td className="px-4 py-4 text-text-primary font-medium">{p.productName}</td>
+                    <td className="px-4 py-4 text-text-primary">₹{Number(p.manufacturingCost).toFixed(2)}</td>
+                    <td className="px-4 py-4 text-text-primary">₹{Number(p.sellingPrice).toFixed(2)}</td>
+                    <td className="px-4 py-4 text-text-primary">{Number(p.profitMargin).toFixed(1)}%</td>
+                    <td className="px-4 py-4 text-text-primary">{p.materials?.length ?? 0}</td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${p.active ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
+                        {p.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 text-sm space-x-2">
+                      <Link href={`/dashboard/products/${p.productId}`}>
+                        <Button variant="outline" size="sm">View</Button>
+                      </Link>
+                      <Link href={`/dashboard/products/edit/${p.productId}`}>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </Link>
+                      <Button variant="destructive" size="sm" onClick={() => handleDelete(p.productId)}>Delete</Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-text-muted">No products found</p>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
