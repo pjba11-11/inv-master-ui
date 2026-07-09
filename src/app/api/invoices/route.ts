@@ -12,9 +12,11 @@ let invoices = [
     createdById: 1,
     invoiceDate: '2024-05-15',
     subtotal: 2475.00,
-    gst: 445.50,
+    cgst: 222.75,
+    sgst: 222.75,
     discount: 247.50,
     grandTotal: 2673.00,
+    poNumber: '',
     status: 'GENERATED' as InvoiceStatus,
     remarks: 'Thank you for your business!',
     createdAt: '2024-05-10T10:30:00Z',
@@ -28,9 +30,11 @@ let invoices = [
     createdById: 1,
     invoiceDate: '2024-05-16',
     subtotal: 2500.00,
-    gst: 450.00,
+    cgst: 225.00,
+    sgst: 225.00,
     discount: 0,
     grandTotal: 2950.00,
+    poNumber: 'PO-2024-002',
     status: 'PARTIALLY_PAID' as InvoiceStatus,
     remarks: '',
     createdAt: '2024-05-11T14:15:00Z',
@@ -65,26 +69,29 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (!body.customerId || !body.invoiceDate) {
-      return NextResponse.json({ error: 'customerId and invoiceDate are required' }, { status: 400 });
+    if (!body.invoiceDate) {
+      return NextResponse.json({ error: 'invoiceDate is required' }, { status: 400 });
     }
 
     const subtotal: number = body.subtotal ?? 0;
-    const gst: number = body.gst ?? 0;
+    const cgst: number = body.cgst ?? 0;
+    const sgst: number = body.sgst ?? 0;
     const discount: number = body.discount ?? 0;
-    const grandTotal = subtotal + gst - discount;
+    const grandTotal = subtotal + cgst + sgst - discount;
 
     const newInvoice = {
       id: Date.now(),
       invoiceNumber: body.invoiceNumber || `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
       companyId: body.companyId || 1,
-      customerId: Number(body.customerId),
+      customerId: body.customerId ? Number(body.customerId) : null,
       createdById: body.createdById || 1,
       invoiceDate: body.invoiceDate,
       subtotal,
-      gst,
+      cgst,
+      sgst,
       discount,
       grandTotal: parseFloat(grandTotal.toFixed(2)),
+      poNumber: body.poNumber || '',
       status: (body.status as InvoiceStatus) || 'GENERATED',
       remarks: body.remarks || '',
       createdAt: new Date().toISOString(),
