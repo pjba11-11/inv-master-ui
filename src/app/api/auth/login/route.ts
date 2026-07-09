@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-// Mock users — role matches backend enum: ADMIN | MANAGER | SALES
+// Mock users — role matches backend enum: ADMIN | MANAGER | EMPLOYEE
 let users = [
-  { id: 1, companyId: 1, name: 'Admin User',   email: 'admin@example.com',   password: 'admin123',   role: 'ADMIN' },
-  { id: 2, companyId: 1, name: 'Manager User', email: 'manager@example.com', password: 'manager123', role: 'MANAGER' },
-  { id: 3, companyId: 1, name: 'Sales User',   email: 'sales@example.com',   password: 'sales123',   role: 'SALES' },
+  { id: 1, companyId: 1, name: 'Admin User',    email: 'admin@example.com',    password: 'admin123',    role: 'ADMIN' },
+  { id: 2, companyId: 1, name: 'Manager User',  email: 'manager@example.com',  password: 'manager123',  role: 'MANAGER' },
+  { id: 3, companyId: 1, name: 'Employee User', email: 'employee@example.com', password: 'employee123', role: 'EMPLOYEE' },
 ];
 
 // POST /auth/login — body: { email, password }
