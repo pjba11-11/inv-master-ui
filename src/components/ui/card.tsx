@@ -7,17 +7,26 @@ interface CardProps {
   footer?: React.ReactNode;
 }
 
-export const Card = ({
-  children,
-  className = '',
-  header,
-  footer,
-}: CardProps) => {
+export const Card = ({ children, className = '', header, footer }: CardProps) => {
   return (
-    <div className={`rounded-xl border border-surface-2 bg-surface-1 shadow-md ${className}`}>
-      {header && <div className="px-6 py-4 border-b border-surface-2">{header}</div>}
-      <div className="p-6">{children}</div>
-      {footer && <div className="px-6 py-4 border-t border-surface-2">{footer}</div>}
+    <div
+      className={`rounded-xl bg-surface-1 ${className}`}
+      style={{
+        border: '1px solid var(--border-subtle)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+      }}
+    >
+      {header && (
+        <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+          {header}
+        </div>
+      )}
+      <div className="p-5">{children}</div>
+      {footer && (
+        <div className="px-5 py-4" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+          {footer}
+        </div>
+      )}
     </div>
   );
 };

@@ -46,7 +46,7 @@ Open [http://localhost:3000](http://localhost:3000).
 |---|---|---|
 | Admin | admin@example.com | admin123 |
 | Manager | manager@example.com | manager123 |
-| Sales | sales@example.com | sales123 |
+| Employee | employee@example.com | employee123 |
 
 ## API → Backend Mapping
 

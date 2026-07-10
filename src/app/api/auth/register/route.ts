@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
     }
 
-    const validRoles = ['ADMIN', 'MANAGER', 'SALES'];
+    const validRoles = ['ADMIN', 'MANAGER', 'EMPLOYEE'];
     if (!validRoles.includes(role)) {
       return NextResponse.json({ error: `role must be one of: ${validRoles.join(', ')}` }, { status: 400 });
     }

@@ -1,99 +1,29 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { backendFetch } from '@/lib/backend';
 
-// Status matches backend InvoiceStatus enum: GENERATED | PARTIALLY_PAID | PAID | CANCELLED
-type InvoiceStatus = 'GENERATED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
-
-let invoices = [
-  {
-    id: 1,
-    invoiceNumber: 'INV-2024-001',
-    companyId: 1,
-    customerId: 1,
-    createdById: 1,
-    invoiceDate: '2024-05-15',
-    subtotal: 2475.00,
-    gst: 445.50,
-    discount: 247.50,
-    grandTotal: 2673.00,
-    status: 'GENERATED' as InvoiceStatus,
-    remarks: 'Thank you for your business!',
-    createdAt: '2024-05-10T10:30:00Z',
-    updatedAt: '2024-05-15T14:22:00Z',
-  },
-  {
-    id: 2,
-    invoiceNumber: 'INV-2024-002',
-    companyId: 1,
-    customerId: 2,
-    createdById: 1,
-    invoiceDate: '2024-05-16',
-    subtotal: 2500.00,
-    gst: 450.00,
-    discount: 0,
-    grandTotal: 2950.00,
-    status: 'PARTIALLY_PAID' as InvoiceStatus,
-    remarks: '',
-    createdAt: '2024-05-11T14:15:00Z',
-    updatedAt: '2024-05-16T09:30:00Z',
-  },
-];
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const status = searchParams.get('status');
-  const customerId = searchParams.get('customerId');
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '10');
-
-  let result = [...invoices];
-
-  if (status) result = result.filter(inv => inv.status === status);
-  if (customerId) result = result.filter(inv => inv.customerId === Number(customerId));
-
-  result.sort((a, b) => new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime());
-
-  const total = result.length;
-  const paginatedInvoices = result.slice((page - 1) * limit, page * limit);
-
-  return NextResponse.json({
-    invoices: paginatedInvoices,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
-  });
+function normalizeInvoice(inv: Record<string, unknown>) {
+  // Backend uses invoiceId; UI uses id
+  if ('invoiceId' in inv && !('id' in inv)) {
+    return { ...inv, id: inv.invoiceId };
+  }
+  return inv;
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
+export async function GET(request: NextRequest) {
+  const outResponse = new NextResponse();
+  const res = await backendFetch('/invoices', { method: 'GET' }, request, outResponse);
+  const data = await res.json();
+  const list = Array.isArray(data) ? data.map(normalizeInvoice) : data;
+  return NextResponse.json({ invoices: list }, { status: res.status, headers: outResponse.headers });
+}
 
-    if (!body.customerId || !body.invoiceDate) {
-      return NextResponse.json({ error: 'customerId and invoiceDate are required' }, { status: 400 });
-    }
-
-    const subtotal: number = body.subtotal ?? 0;
-    const gst: number = body.gst ?? 0;
-    const discount: number = body.discount ?? 0;
-    const grandTotal = subtotal + gst - discount;
-
-    const newInvoice = {
-      id: Date.now(),
-      invoiceNumber: body.invoiceNumber || `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
-      companyId: body.companyId || 1,
-      customerId: Number(body.customerId),
-      createdById: body.createdById || 1,
-      invoiceDate: body.invoiceDate,
-      subtotal,
-      gst,
-      discount,
-      grandTotal: parseFloat(grandTotal.toFixed(2)),
-      status: (body.status as InvoiceStatus) || 'GENERATED',
-      remarks: body.remarks || '',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    invoices.push(newInvoice);
-    return NextResponse.json(newInvoice, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
-  }
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const outResponse = new NextResponse();
+  const res = await backendFetch('/invoices', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }, request, outResponse);
+  const data = await res.json();
+  return NextResponse.json(normalizeInvoice(data), { status: res.status, headers: outResponse.headers });
 }

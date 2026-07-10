@@ -2,309 +2,219 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/widgets/stat-card';
-import { RevenueChart } from '@/components/widgets/revenue-chart';
-import { InvoicesTable } from '@/components/widgets/invoices-table';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+type InvoiceStatus = 'GENERATED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
 
 interface Invoice {
-  id: string;
-  number: string;
-  date: string;
-  customerName: string;
-  customerEmail: string;
-  customerAddress: string;
-  items: Array<{
-    id: string;
-    description: string;
-    quantity: number;
-    rate: number;
-    tax: number;
-  }>;
-  discount: number;
-  taxRate: number;
+  id: number;
+  invoiceNumber: string;
+  invoiceDate: string;
   subtotal: number;
-  taxAmount: number;
-  total: number;
-  status: 'draft' | 'sent' | 'viewed' | 'paid' | 'overdue';
-  notes?: string;
-  terms?: string;
+  cgst: number;
+  sgst: number;
+  discount: number;
+  grandTotal: number;
+  poNumber: string;
+  status: InvoiceStatus;
+  remarks: string;
   createdAt: string;
-  updatedAt: string;
-  payments: Array<{
-    id: string;
-    amount: number;
-    date: string;
-    method: string;
-    reference?: string;
-  }>;
 }
 
+interface LineItem {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+interface Payment {
+  id: number;
+  paymentDate: string;
+  amount: number;
+  paymentMethod: string;
+  transactionReference: string;
+  remarks: string;
+}
+
+const statusBadge: Record<InvoiceStatus, string> = {
+  GENERATED: 'bg-warning/20 text-warning',
+  PARTIALLY_PAID: 'bg-primary-500/20 text-primary-500',
+  PAID: 'bg-success/20 text-success',
+  CANCELLED: 'bg-error/20 text-error',
+};
+
 export default function InvoiceDetailPage() {
-  // Mock invoice data - in a real app, this would come from API
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [editing, setEditing] = useState(false);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Initialize mock data
   useEffect(() => {
-    setInvoice({
-      id: '1',
-      number: 'INV-001',
-      date: '2023-05-15',
-      customerName: 'Acme Corp',
-      customerEmail: 'info@acme.com',
-      customerAddress: '123 Business Ave, Suite 100\nNew York, NY 10001\nUSA',
-      items: [
-        { id: '1', description: 'Web Development Services', quantity: 10, rate: 100, tax: 15 },
-        { id: '2', description: 'UI/UX Design', quantity: 5, rate: 150, tax: 15 },
-        { id: '3', description: 'Project Management', quantity: 8, rate: 75, tax: 15 }
-      ],
-      discount: 10,
-      taxRate: 15,
-      subtotal: 2475,
-      taxAmount: 371.25,
-      total: 2558.25,
-      status: 'sent',
-      notes: 'Thank you for your business!',
-      terms: 'Payment due within 30 days. Late payments subject to 1.5% monthly fee.',
-      createdAt: '2023-05-10T10:30:00Z',
-      updatedAt: '2023-05-15T14:22:00Z',
-      payments: [
-        { id: 'pay1', amount: 500, date: '2023-05-20', method: 'Bank Transfer', reference: 'TXN123456' }
-      ]
+    Promise.all([
+      fetch(`/api/invoices/${id}`).then(r => r.ok ? r.json() : null),
+      fetch(`/api/invoices/${id}/line-items`).then(r => r.json()).catch(() => []),
+      fetch(`/api/invoices/${id}/payments`).then(r => r.json()).catch(() => []),
+    ]).then(([inv, items, pmts]) => {
+      setInvoice(inv);
+      setLineItems(Array.isArray(items) ? items : []);
+      setPayments(Array.isArray(pmts) ? pmts : []);
+      setLoading(false);
     });
-  }, []);
+  }, [id]);
 
-  const getStatusVariant = (status: Invoice['status']) => {
-    switch (status) {
-      case 'paid': return 'success';
-      case 'overdue': return 'error';
-      case 'draft': return 'secondary';
-      case 'sent':
-      case 'viewed': return 'warning';
-      default: return 'default';
-    }
+  const markAsPaid = async () => {
+    const res = await fetch(`/api/invoices/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'PAID' }),
+    });
+    if (res.ok) setInvoice(prev => prev ? { ...prev, status: 'PAID' } : prev);
   };
 
-  const handleMarkAsPaid = () => {
-    // In a real app, this would update the invoice status via API
-    alert('Invoice marked as paid!');
-  };
+  if (loading) return <div className="text-center py-8 text-text-muted">Loading...</div>;
+  if (!invoice) { router.push('/dashboard/invoices'); return null; }
 
-  const handleRecordPayment = () => {
-    // Navigate to payments page
-    // In a real app with routing: router.push(`/dashboard/invoices/${invoice?.id}/payments`);
-    alert('Navigate to payment recording');
-  };
-
-  const handleEditInvoice = () => {
-    setEditing(true);
-  };
-
-  if (!invoice) {
-    return <div className="text-center py-8">Loading invoice...</div>;
-  }
+  const totalPaid = payments.reduce((s, p) => s + Number(p.amount), 0);
+  const balanceDue = Number(invoice.grandTotal) - totalPaid;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={`Invoice #${invoice.number}`}
-        description={`Issued on ${new Date(invoice.date).toLocaleDateString()}`}
+        title={`Invoice ${invoice.invoiceNumber}`}
+        description={`Issued on ${invoice.invoiceDate}`}
         showBreadcrumbs={true}
         breadcrumbItems={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Invoices', href: '/dashboard/invoices' },
-          { label: 'Invoice #${invoice.number}', href: `/dashboard/invoices/${invoice.id}` }
+          { label: invoice.invoiceNumber, href: `/dashboard/invoices/${id}` },
         ]}
       >
-        <div className="flex space-x-3">
-          <Button variant="outline" onClick={handleEditInvoice}>
-            Edit Invoice
-          </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => router.back()}>Back</Button>
+          <Link href={`/dashboard/invoices/${id}/payments`}>
+            <Button variant="outline" disabled={invoice.status === 'PAID'}>Record Payment</Button>
+          </Link>
           <Button
-            variant="outline"
-            onClick={handleRecordPayment}
-            disabled={invoice.status === 'paid'}
+            variant="primary"
+            onClick={markAsPaid}
+            disabled={invoice.status === 'PAID'}
           >
-            Record Payment
-          </Button>
-          <Button
-            variant={invoice.status === 'paid' ? 'secondary' : 'primary'}
-            onClick={handleMarkAsPaid}
-            disabled={invoice.status === 'paid'}
-          >
-            {invoice.status === 'paid' ? 'Paid' : 'Mark as Paid'}
+            {invoice.status === 'PAID' ? 'Paid' : 'Mark as Paid'}
           </Button>
         </div>
       </PageHeader>
 
-      {/* Invoice Header */}
-      <div className="bg-surface-1 rounded-xl border border-surface-2 p-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
-          <div className="space-y-2">
-            <p className="text-text-muted">Bill To</p>
-            <address className="text-text-primary">
-              {invoice.customerName}<br/>
-              {invoice.customerEmail}<br/>
-              {invoice.customerAddress}
-            </address>
-          </div>
-          <div className="space-y-2 text-right">
-            <p className="text-text-muted">Invoice Details</p>
-            <div className="space-y-1">
-              <span className="font-medium text-text-muted">Invoice #:</span>
-              <span className="text-text-primary">{invoice.number}</span>
-            </div>
-            <div className="space-y-1">
-              <span className="font-medium text-text-muted">Date:</span>
-              <span className="text-text-primary">{new Date(invoice.date).toLocaleDateString()}</span>
-            </div>
-            <div className="space-y-1">
-              <span className="font-medium text-text-muted">Due Date:</span>
-              <span className="text-text-primary">{new Date(invoice.date).toLocaleDateString()}</span>
-            </div>
-            <div className="space-y-1">
-              <span className="font-medium text-text-muted">Status:</span>
-              <Badge variant={getStatusVariant(invoice.status)} className="text-xs px-2.5 py-0.5">
-                {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-              </Badge>
-            </div>
-          </div>
-        </div>
+      {/* Summary */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard title="Subtotal" value={`₹${Number(invoice.subtotal).toFixed(2)}`} />
+        <StatCard title="CGST" value={`₹${Number(invoice.cgst).toFixed(2)}`} />
+        <StatCard title="SGST" value={`₹${Number(invoice.sgst).toFixed(2)}`} />
+        <StatCard title="Grand Total" value={`₹${Number(invoice.grandTotal).toFixed(2)}`} />
       </div>
 
-      {/* Invoice Summary */}
+      {/* Invoice Details */}
       <div className="bg-surface-1 rounded-xl border border-surface-2 p-6">
-        <h3 className="text-lg font-semibold mb-4 text-text-primary">Invoice Summary</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <StatCard title="Subtotal" value={`$${invoice.subtotal.toFixed(2)}`} />
-          <StatCard title="Tax" value={`$${invoice.taxAmount.toFixed(2)}`} />
-          <StatCard title="Discount" value={`-$${(invoice.subtotal * invoice.discount / 100).toFixed(2)}`} />
-          <StatCard title="Total Due" value={`$${invoice.total.toFixed(2)}`} />
+        <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          <div>
+            <p className="text-sm text-text-muted">Invoice Number</p>
+            <p className="font-medium text-text-primary">{invoice.invoiceNumber}</p>
+          </div>
+          <div>
+            <p className="text-sm text-text-muted">Invoice Date</p>
+            <p className="font-medium text-text-primary">{invoice.invoiceDate}</p>
+          </div>
+          {invoice.poNumber && (
+            <div>
+              <p className="text-sm text-text-muted">PO Number</p>
+              <p className="font-medium text-text-primary">{invoice.poNumber}</p>
+            </div>
+          )}
+          <div>
+            <p className="text-sm text-text-muted">Status</p>
+            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge[invoice.status]}`}>
+              {invoice.status.replace('_', ' ')}
+            </span>
+          </div>
+          <div>
+            <p className="text-sm text-text-muted">Discount</p>
+            <p className="font-medium text-text-primary">₹{Number(invoice.discount).toFixed(2)}</p>
+          </div>
+          {invoice.remarks && (
+            <div className="md:col-span-2">
+              <p className="text-sm text-text-muted">Remarks</p>
+              <p className="text-text-primary">{invoice.remarks}</p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Line Items */}
       <div className="bg-surface-1 rounded-xl border border-surface-2 p-6">
         <h3 className="text-lg font-semibold mb-4 text-text-primary">Line Items</h3>
-        <div className="overflow-x-auto">
+        {lineItems.length > 0 ? (
           <table className="w-full border-spacing-0">
             <thead>
               <tr className="bg-surface-2">
-                <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Description</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-text-muted uppercase">Quantity</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-text-muted uppercase">Rate</th>
-                <th className="text-center px-4 py-3 text-xs font-medium text-text-muted uppercase">Tax (%)</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Product</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-text-muted uppercase">Qty</th>
+                <th className="text-right px-4 py-3 text-xs font-medium text-text-muted uppercase">Unit Price</th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-text-muted uppercase">Amount</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-2">
-              {invoice.items.map((item) => {
-                const amount = item.quantity * item.rate;
-                return (
-                  <tr key={item.id} className="hover:bg-surface-3 transition-colors">
-                    <td className="px-4 py-4 text-sm text-text-primary">{item.description}</td>
-                    <td className="px-4 py-4 text-sm text-center text-text-primary">{item.quantity}</td>
-                    <td className="px-4 py-4 text-sm text-center text-text-primary">${item.rate.toFixed(2)}</td>
-                    <td className="px-4 py-4 text-sm text-center text-text-primary">{item.tax}%</td>
-                    <td className="px-4 py-4 text-sm text-right text-text-primary font-medium">${amount.toFixed(2)}</td>
-                  </tr>
-                );
-              })}
+              {lineItems.map(item => (
+                <tr key={item.id} className="hover:bg-surface-3">
+                  <td className="px-4 py-3 text-text-primary">{item.productName}</td>
+                  <td className="px-4 py-3 text-center text-text-primary">{item.quantity}</td>
+                  <td className="px-4 py-3 text-right text-text-primary">₹{Number(item.unitPrice).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right text-text-primary font-medium">₹{(Number(item.quantity) * Number(item.unitPrice)).toFixed(2)}</td>
+                </tr>
+              ))}
             </tbody>
-            <tfoot>
-              <tr className="bg-surface-2">
-                <td colSpan="4" className="px-4 py-4 text-right font-medium text-text-muted">Subtotal:</td>
-                <td className="px-4 py-4 text-sm text-right text-text-primary font-medium">${invoice.subtotal.toFixed(2)}</td>
-              </tr>
-              <tr className="bg-surface-2">
-                <td colSpan="4" className="px-4 py-4 text-right font-medium text-text-muted">Tax ({invoice.taxRate}%):</td>
-                <td className="px-4 py-4 text-sm text-right text-text-primary font-medium">${invoice.taxAmount.toFixed(2)}</td>
-              </tr>
-              <tr className="bg-surface-2">
-                <td colSpan="4" className="px-4 py-4 text-right font-medium text-text-muted">Discount ({invoice.discount}%):</td>
-                <td className="px-4 py-4 text-sm text-right text-text-primary font-medium">-${(invoice.subtotal * invoice.discount / 100).toFixed(2)}</td>
-              </tr>
-              <tr className="bg-surface-2">
-                <td colSpan="4" className="px-4 py-4 text-right font-medium text-text-primary">Total:</td>
-                <td className="px-4 py-4 text-sm text-right text-text-primary font-medium text-xl">${invoice.total.toFixed(2)}</td>
-              </tr>
-            </tfoot>
           </table>
-        </div>
+        ) : (
+          <p className="text-text-muted text-center py-4">No line items recorded.</p>
+        )}
       </div>
 
       {/* Payments */}
       <div className="bg-surface-1 rounded-xl border border-surface-2 p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-semibold mb-2 text-text-primary">Payment History</h3>
-          {invoice.status !== 'paid' && (
-            <Button variant="outline" size="sm" onClick={handleRecordPayment}>
-              Record Payment
-            </Button>
-          )}
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-text-primary">Payments</h3>
+          <div className="text-sm text-text-muted">Balance due: <span className="font-semibold text-text-primary">₹{balanceDue.toFixed(2)}</span></div>
         </div>
-        {invoice.payments.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full border-spacing-0">
-              <thead>
-                <tr className="bg-surface-2">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Date</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Amount</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Method</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Reference</th>
+        {payments.length > 0 ? (
+          <table className="w-full border-spacing-0">
+            <thead>
+              <tr className="bg-surface-2">
+                <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Date</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Amount</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Method</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Reference</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-2">
+              {payments.map(p => (
+                <tr key={p.id} className="hover:bg-surface-3">
+                  <td className="px-4 py-3 text-text-primary">{p.paymentDate}</td>
+                  <td className="px-4 py-3 text-text-primary">₹{Number(p.amount).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-text-primary">{p.paymentMethod || '—'}</td>
+                  <td className="px-4 py-3 text-text-primary">{p.transactionReference || '—'}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-2">
-                {invoice.payments.map((payment) => (
-                  <tr key={payment.id} className="hover:bg-surface-3 transition-colors">
-                    <td className="px-4 py-4 text-sm text-text-primary">{new Date(payment.date).toLocaleDateString()}</td>
-                    <td className="px-4 py-4 text-sm text-text-primary">${payment.amount.toFixed(2)}</td>
-                    <td className="px-4 py-4 text-sm text-text-primary">{payment.method}</td>
-                    <td className="px-4 py-4 text-sm text-text-primary">{payment.reference || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-surface-2">
-                  <td colSpan="3" className="px-4 py-4 text-right font-medium text-text-muted">Total Paid:</td>
-                  <td className="px-4 py-4 text-sm text-right text-text-primary font-medium">
-                    ${invoice.payments.reduce((sum, p) => sum + p.amount, 0).toFixed(2)}
-                  </td>
-                </tr>
-                <tr className="bg-surface-2">
-                  <td colSpan="3" className="px-4 py-4 text-right font-medium text-text-muted">Balance Due:</td>
-                  <td className="px-4 py-4 text-sm text-right text-text-primary font-medium">
-                    ${(invoice.total - invoice.payments.reduce((sum, p) => sum + p.amount, 0)).toFixed(2)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         ) : (
           <p className="text-text-muted text-center py-4">No payments recorded yet.</p>
         )}
       </div>
-
-      {/* Notes and Terms */}
-      {invoice.notes || invoice.terms ? (
-        <div className="bg-surface-1 rounded-xl border border-surface-2 p-6">
-          <h3 className="text-lg font-semibold mb-4 text-text-primary">Notes & Terms</h3>
-          {invoice.notes && (
-            <div className="mb-4">
-              <p className="font-medium text-text-muted mb-1">Notes:</p>
-              <p className="text-text-muted whitespace-pre-line">{invoice.notes}</p>
-            </div>
-          )}
-          {invoice.terms && (
-            <div>
-              <p className="font-medium text-text-muted mb-1">Terms:</p>
-              <p className="text-text-muted whitespace-pre-line">{invoice.terms}</p>
-            </div>
-          )}
-        </div>
-      ) : null}
     </div>
   );
 }

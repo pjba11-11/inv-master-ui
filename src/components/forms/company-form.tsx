@@ -43,7 +43,7 @@ export const CompanyForm = ({
     const errors: Partial<Record<keyof CompanyFormValues, string>> = {};
     if (!values.companyName.trim()) errors.companyName = 'Company name is required';
     if (values.email && !/\S+@\S+\.\S+/.test(values.email)) errors.email = 'Email address is invalid';
-    return errors as FormErrors;
+    return errors as Partial<Record<keyof CompanyFormValues, string>>;
   };
 
   const { values, errors, handleChange, handleBlur, handleSubmit, isSubmitting } =
@@ -156,7 +156,7 @@ export const CompanyForm = ({
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
-        <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
+        <Button variant="primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : 'Save Company'}
         </Button>
       </div>

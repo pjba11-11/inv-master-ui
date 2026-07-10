@@ -9,6 +9,7 @@ interface TextareaProps {
   error?: boolean;
   className?: string;
   autoResize?: boolean;
+  onBlur?: (e: React.FocusEvent<HTMLTextAreaElement>) => void;
 }
 
 export const Textarea = ({
@@ -20,28 +21,26 @@ export const Textarea = ({
   error = false,
   className = '',
   autoResize = false,
+  onBlur,
 }: TextareaProps) => {
-  const baseClasses = `
-    block w-full min-h-[#{rows * 2.5}rem] resize-none rounded-md border border-neutral-300 bg-surface-2 
-    px-4 py-2 text-text-primary placeholder:text-text-muted 
-    focus-visible:ring-2 focus-visible:ring-primary-400 
-    focus-visible:border-transparent disabled:opacity-50 
-    disabled:cursor-not-allowed transition-all duration-200
-  `;
-
-  const errorClasses = error
-    ? 'border-error bg-error/10 focus-visible:ring-error/20'
-    : '';
-
   return (
     <textarea
+      onBlur={onBlur}
       placeholder={placeholder}
       value={value}
       onChange={onChange}
       rows={rows}
       disabled={disabled}
-      className={`${baseClasses} ${errorClasses} ${className}`}
-      style={{ resize: autoResize ? 'vertical' : 'none' }}
+      className={`block w-full rounded-lg px-3.5 py-2.5 text-sm text-text-primary
+        placeholder:text-text-muted bg-surface-2 outline-none transition-all duration-150
+        focus:ring-1 focus:ring-primary-500/50
+        disabled:opacity-40 disabled:cursor-not-allowed
+        ${error ? 'ring-1 ring-error/60' : ''}
+        ${className}`}
+      style={{
+        border: `1px solid ${error ? 'var(--error)' : 'var(--border-default)'}`,
+        resize: autoResize ? 'vertical' : 'none',
+      }}
     />
   );
 };

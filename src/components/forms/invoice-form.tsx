@@ -1,4 +1,4 @@
-import { useForm } from './use-form';
+import { useForm, FormErrors } from './use-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
@@ -82,6 +82,7 @@ export const InvoiceForm = ({
             onChange={(e) => handleChange('customerId', e.target.value)}
             onBlur={() => handleBlur('customerId')}
             placeholder="Select a customer"
+            options={[]}
           />
           {errors.customerId && <p className="mt-1 text-sm text-error">{errors.customerId}</p>}
         </div>
@@ -166,7 +167,7 @@ export const InvoiceForm = ({
         <Button variant="secondary" type="button">Back</Button>
         <Button
           variant="primary"
-          onClick={handleSubmit}
+          type="submit"
           disabled={isSubmitting || lineItems.length === 0}
         >
           {isSubmitting ? 'Saving Invoice...' : 'Create Invoice'}

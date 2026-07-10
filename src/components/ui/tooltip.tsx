@@ -56,8 +56,7 @@ export const Tooltip = ({
       onMouseLeave={hideTooltip}
       onFocus={showTooltip}
       onBlur={hideTooltip}
-      position="relative"
-      display="inline-block"
+      style={{ position: 'relative', display: 'inline-block' }}
     >
       {children}
       {isOpen && (

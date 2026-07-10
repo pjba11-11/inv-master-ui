@@ -4,55 +4,35 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useParams, useRouter } from 'next/navigation';
 
-// Mock data - in a real app, this would come from an API
-const mockProducts = [
-  {
-    id: '1',
-    name: 'Wireless Mouse',
-    description: 'Ergonomic wireless mouse with long battery life',
-    sku: 'WM-001',
-    category: 'Electronics',
-    unitPrice: 29.99,
-    taxable: true,
-    isActive: true
-  },
-  {
-    id: '2',
-    name: 'Office Chair',
-    description: 'Ergonomic office chair with lumbar support',
-    sku: 'OC-005',
-    category: 'Furniture',
-    unitPrice: 199.99,
-    taxable: true,
-    isActive: true
-  },
-  {
-    id: '3',
-    name: 'Notebook A4',
-    description: 'Pack of 5 ruled notebooks, A4 size',
-    sku: 'NB-A4-5',
-    category: 'Stationery',
-    unitPrice: 12.50,
-    taxable: false,
-    isActive: true
-  }
-];
+interface Product {
+  productId: number;
+  productName: string;
+  description: string;
+  active: boolean;
+  manufacturingCost: number;
+  sellingPrice: number;
+  profitMargin: number;
+  materials: { materialId: number; materialName: string; unit: string; hsnCode: string; currentPrice: number }[];
+}
 
 export default function ProductViewPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [product, setProduct] = useState(null);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const prod = mockProducts.find(p => p.id === id);
-    setProduct(prod || null);
+    fetch(`/api/products/${id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { setProduct(data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [id]);
 
+  if (loading) return <div className="text-center py-8 text-text-muted">Loading...</div>;
+
   if (!product) {
-    // If product not found, redirect to list
     router.push('/dashboard/products');
     return null;
   }
@@ -61,79 +41,81 @@ export default function ProductViewPage() {
     <div className="space-y-6">
       <PageHeader
         title="Product Details"
-        description={`Viewing product: ${product?.name}`}
+        description={`Viewing: ${product.productName}`}
         showBreadcrumbs={true}
         breadcrumbItems={[
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Products', href: '/dashboard/products' },
-          { label: 'Product Details', href: `/dashboard/products/${id}` }
+          { label: 'Product Details', href: `/dashboard/products/${id}` },
         ]}
       >
-        <div className="flex justify-between items-start">
-          <Button variant="outline" onClick={() => router.back()}>
-            Back to Products
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/dashboard/products/edit/${id}`)}
-          >
-            Edit Product
-          </Button>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => router.back()}>Back</Button>
+          <Button variant="outline" onClick={() => router.push(`/dashboard/products/edit/${id}`)}>Edit</Button>
         </div>
       </PageHeader>
 
-      <div className="grid gap-6">
-        <Card>
-          <div className="space-y-4">
-            <div className="border-b border-surface-2 pb-4">
-              <h2 className="text-lg font-medium text-text-primary">Product Information</h2>
+      <Card>
+        <div className="space-y-6">
+          <div className="border-b border-surface-2 pb-4">
+            <h2 className="text-lg font-medium text-text-primary">Product Information</h2>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-sm font-medium text-text-muted">Product Name</p>
+              <p className="text-text-primary">{product.productName}</p>
             </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <p className="text-sm font-medium text-text-muted">Product Name</p>
-                  <p className="text-text-primary">{product.name}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-text-muted">SKU</p>
-                  <p className="text-text-primary">{product.sku}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-text-muted">Category</p>
-                  <p className="text-text-primary">{product.category}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-text-muted">Description</p>
-                  <p className="text-text-primary">{product.description}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-text-muted">Unit Price</p>
-                  <p className="text-text-primary font-medium">${product.unitPrice.toFixed(2)}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-text-muted">Taxable</p>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.taxable ? 'bg-warning/20 text-warning' : 'bg-success/20 text-success'}`}>
-                    {product.taxable ? 'Yes' : 'No'}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium text-text-muted">Status</p>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${product.isActive ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
-                    {product.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
+            <div>
+              <p className="text-sm font-medium text-text-muted">Status</p>
+              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${product.active ? 'bg-success/20 text-success' : 'bg-error/20 text-error'}`}>
+                {product.active ? 'Active' : 'Inactive'}
+              </span>
+            </div>
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-text-muted">Description</p>
+              <p className="text-text-primary">{product.description || '—'}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-text-muted">Manufacturing Cost</p>
+              <p className="text-text-primary font-medium">₹{Number(product.manufacturingCost).toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-text-muted">Selling Price</p>
+              <p className="text-text-primary font-medium">₹{Number(product.sellingPrice).toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-text-muted">Profit Margin</p>
+              <p className="text-primary-500 font-semibold text-lg">{Number(product.profitMargin).toFixed(1)}%</p>
             </div>
           </div>
-        </Card>
-      </div>
+
+          {product.materials?.length > 0 && (
+            <div className="border-t border-surface-2 pt-6">
+              <h3 className="text-base font-medium text-text-primary mb-4">Materials</h3>
+              <table className="w-full border-spacing-0">
+                <thead>
+                  <tr className="bg-surface-2">
+                    <th className="text-left px-3 py-2 text-xs font-medium text-text-muted uppercase">Name</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-text-muted uppercase">HSN</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-text-muted uppercase">Unit</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-text-muted uppercase">Price</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-2">
+                  {product.materials.map(m => (
+                    <tr key={m.materialId} className="hover:bg-surface-1">
+                      <td className="px-3 py-3 text-text-primary">{m.materialName}</td>
+                      <td className="px-3 py-3 text-text-primary">{m.hsnCode || '—'}</td>
+                      <td className="px-3 py-3 text-text-primary">{m.unit}</td>
+                      <td className="px-3 py-3 text-text-primary">₹{Number(m.currentPrice).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }

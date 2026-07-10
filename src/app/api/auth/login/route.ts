@@ -1,33 +1,54 @@
 import { NextResponse } from 'next/server';
+import { backendUrl, decodeJwtPayload } from '@/lib/backend';
 
-// Mock users — role matches backend enum: ADMIN | MANAGER | SALES
-let users = [
-  { id: 1, companyId: 1, name: 'Admin User',   email: 'admin@example.com',   password: 'admin123',   role: 'ADMIN' },
-  { id: 2, companyId: 1, name: 'Manager User', email: 'manager@example.com', password: 'manager123', role: 'MANAGER' },
-  { id: 3, companyId: 1, name: 'Sales User',   email: 'sales@example.com',   password: 'sales123',   role: 'SALES' },
-];
-
-// POST /auth/login — body: { email, password }
-// Returns: { accessToken, refreshToken }  (mirrors backend LoginResponse)
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
 
-    if (!email || !password) {
+    if (!body.email || !body.password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    const user = users.find(u => u.email === email && u.password === password);
-    if (!user) {
-      return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+    const backendRes = await fetch(backendUrl('/auth/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: body.email, password: body.password }),
+    });
+
+    if (!backendRes.ok) {
+      const status = backendRes.status === 403 ? 401 : backendRes.status;
+      return NextResponse.json({ error: 'Invalid email or password' }, { status });
     }
 
-    // Dummy JWT-shaped tokens (base64 placeholder — not real JWTs)
-    const accessToken  = `mock-access-token.${btoa(JSON.stringify({ sub: user.email, role: user.role, companyId: user.companyId }))}.sig`;
-    const refreshToken = `mock-refresh-token.${btoa(JSON.stringify({ sub: user.email }))}.sig`;
+    const { accessToken, refreshToken } = await backendRes.json();
 
-    return NextResponse.json({ accessToken, refreshToken });
+    const payload = decodeJwtPayload(accessToken);
+    const email = payload.sub as string;
+    const role = (payload.role as string ?? '').replace('ROLE_', '');
+    const name = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+    const res = NextResponse.json({
+      accessToken,
+      refreshToken,
+      user: { name, email, role },
+    });
+
+    res.cookies.set('auth_token', accessToken, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 60 * 8,
+      sameSite: 'lax',
+    });
+
+    res.cookies.set('refresh_token', refreshToken, {
+      httpOnly: true,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: 'lax',
+    });
+
+    return res;
   } catch {
-    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
+    return NextResponse.json({ error: 'Login failed' }, { status: 500 });
   }
 }

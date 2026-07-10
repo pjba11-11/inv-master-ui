@@ -1,315 +1,205 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 
+interface Settings {
+  id?: number;
+  gstPercentage: number;
+  cgstPercentage: number;
+  sgstPercentage: number;
+  vehicleNumbers: string[];
+  defaultProfitMargin: number;
+  currency: string;
+  invoicePrefix: string;
+  financialYear: string;
+}
+
+const defaultSettings: Settings = {
+  gstPercentage: 18,
+  cgstPercentage: 9,
+  sgstPercentage: 9,
+  vehicleNumbers: [],
+  defaultProfitMargin: 20,
+  currency: 'INR',
+  invoicePrefix: 'INV',
+  financialYear: '2024-25',
+};
+
 export default function SettingsPage() {
-  const [profileForm, setProfileForm] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-  });
+  const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [vehicleInput, setVehicleInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
 
-  const [accountForm, setAccountForm] = useState({
-    companyName: 'Acme Corporation',
-    taxId: 'TXID-123456',
-    address: '123 Business Ave, Suite 100',
-    city: 'New York',
-    state: 'NY',
-    zipCode: '10001',
-    country: 'USA',
-  });
+  useEffect(() => {
+    fetch('/api/companies/1/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) setSettings(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-  const [appearanceForm, setAppearanceForm] = useState({
-    theme: 'light',
-    language: 'en',
-    dateFormat: 'MM/DD/YYYY',
-    notifications: {
-      email: true,
-      push: false,
-      sms: false,
-    },
-  });
+  useEffect(() => {
+    setVehicleInput((settings.vehicleNumbers ?? []).join(', '));
+  }, [loading]);
 
-  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setProfileForm({ ...profileForm, [name]: value });
-  };
-
-  const handleAccountChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setAccountForm({ ...accountForm, [name]: value });
-  };
-
-  const handleAppearanceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type, checked } = e.target;
-    if (type === 'checkbox') {
-      setAppearanceForm({
-        ...appearanceForm,
-        notifications: {
-          ...appearanceForm.notifications,
-          [name]: checked,
-        },
-      });
-    } else {
-      setAppearanceForm({ ...appearanceForm, [name]: value });
+  const handleSave = async () => {
+    setSaving(true);
+    const payload = {
+      ...settings,
+      vehicleNumbers: vehicleInput.split(',').map(v => v.trim()).filter(Boolean),
+    };
+    const res = await fetch('/api/companies/1/settings', {
+      method: settings.id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setSettings(data);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
     }
+    setSaving(false);
   };
 
-  const handleSaveProfile = () => {
-    alert('Profile saved!');
-  };
+  const change = (field: keyof Settings, value: any) =>
+    setSettings(prev => ({ ...prev, [field]: value }));
 
-  const handleSaveAccount = () => {
-    alert('Account details saved!');
-  };
-
-  const handleSaveAppearance = () => {
-    alert('Appearance settings saved!');
-  };
+  if (loading) return <div className="text-center py-8 text-text-muted">Loading...</div>;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Settings"
-        description="Manage your account and application preferences"
+        description="Configure your company tax and invoice settings"
         showBreadcrumbs={true}
         breadcrumbItems={[
           { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Settings', href: '/dashboard/settings' }
+          { label: 'Settings', href: '/dashboard/settings' },
         ]}
-      >
-        {/* No actions in header for settings */}
-      </PageHeader>
+      />
 
-      {/* Profile Section */}
-      <Card className="border-surface-2">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-text-primary">Profile</h2>
-          <form className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* Tax Settings */}
+      <Card>
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-text-primary border-b border-surface-2 pb-3">Tax Configuration</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">First Name</label>
+              <label className="block text-sm font-medium text-text-muted mb-1">GST % (total)</label>
               <Input
-                type="text"
-                name="firstName"
-                value={profileForm.firstName}
-                onChange={handleProfileChange}
-                required
+                type="number"
+                value={settings.gstPercentage}
+                onChange={e => change('gstPercentage', parseFloat(e.target.value) || 0)}
+                min="0"
+                max="100"
+                step="0.01"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Last Name</label>
+              <label className="block text-sm font-medium text-text-muted mb-1">CGST %</label>
               <Input
-                type="text"
-                name="lastName"
-                value={profileForm.lastName}
-                onChange={handleProfileChange}
-                required
+                type="number"
+                value={settings.cgstPercentage}
+                onChange={e => change('cgstPercentage', parseFloat(e.target.value) || 0)}
+                min="0"
+                max="100"
+                step="0.01"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Email</label>
+              <label className="block text-sm font-medium text-text-muted mb-1">SGST %</label>
               <Input
-                type="email"
-                name="email"
-                value={profileForm.email}
-                onChange={handleProfileChange}
-                required
+                type="number"
+                value={settings.sgstPercentage}
+                onChange={e => change('sgstPercentage', parseFloat(e.target.value) || 0)}
+                min="0"
+                max="100"
+                step="0.01"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Phone Number</label>
-              <Input
-                type="tel"
-                name="phone"
-                value={profileForm.phone}
-                onChange={handleProfileChange}
-              />
-            </div>
-          </form>
-          <div className="mt-6 flex justify-end">
-            <Button variant="outline" onClick={handleSaveProfile}>
-              Save Changes
-            </Button>
           </div>
         </div>
       </Card>
 
-      {/* Account Section */}
-      <Card className="border-surface-2">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-text-primary">Account</h2>
-          <form className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* Invoice Settings */}
+      <Card>
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-text-primary border-b border-surface-2 pb-3">Invoice Settings</h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Company Name</label>
+              <label className="block text-sm font-medium text-text-muted mb-1">Invoice Prefix</label>
               <Input
-                type="text"
-                name="companyName"
-                value={accountForm.companyName}
-                onChange={handleAccountChange}
-                required
+                value={settings.invoicePrefix}
+                onChange={e => change('invoicePrefix', e.target.value)}
+                placeholder="INV"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Tax ID</label>
+              <label className="block text-sm font-medium text-text-muted mb-1">Financial Year</label>
               <Input
-                type="text"
-                name="taxId"
-                value={accountForm.taxId}
-                onChange={handleAccountChange}
+                value={settings.financialYear}
+                onChange={e => change('financialYear', e.target.value)}
+                placeholder="2024-25"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Address</label>
+              <label className="block text-sm font-medium text-text-muted mb-1">Currency</label>
               <Input
-                type="text"
-                name="address"
-                value={accountForm.address}
-                onChange={handleAccountChange}
+                value={settings.currency}
+                onChange={e => change('currency', e.target.value)}
+                placeholder="INR"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">City</label>
+              <label className="block text-sm font-medium text-text-muted mb-1">Default Profit Margin (%)</label>
               <Input
-                type="text"
-                name="city"
-                value={accountForm.city}
-                onChange={handleAccountChange}
+                type="number"
+                value={settings.defaultProfitMargin}
+                onChange={e => change('defaultProfitMargin', parseFloat(e.target.value) || 0)}
+                min="0"
+                step="0.01"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">State/Province</label>
-              <Input
-                type="text"
-                name="state"
-                value={accountForm.state}
-                onChange={handleAccountChange}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">ZIP/Postal Code</label>
-              <Input
-                type="text"
-                name="zipCode"
-                value={accountForm.zipCode}
-                onChange={handleAccountChange}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Country</label>
-              <Select
-                value={accountForm.country}
-                onChange={handleAccountChange}
-                options={[
-                  { value: 'USA', label: 'United States' },
-                  { value: 'CAN', label: 'Canada' },
-                  { value: 'UK', label: 'United Kingdom' },
-                  { value: 'AUS', label: 'Australia' },
-                  { value: 'DEU', label: 'Germany' },
-                  { value: 'FRA', label: 'France' },
-                ]}
-                placeholder="Select country"
-              />
-            </div>
-          </form>
-          <div className="mt-6 flex justify-end">
-            <Button variant="outline" onClick={handleSaveAccount}>
-              Save Changes
-            </Button>
           </div>
         </div>
       </Card>
 
-      {/* Appearance Section */}
-      <Card className="border-surface-2">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4 text-text-primary">Appearance</h2>
-          <form className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Theme</label>
-              <Select
-                value={appearanceForm.theme}
-                onChange={handleAppearanceChange}
-                options={[
-                  { value: 'light', label: 'Light' },
-                  { value: 'dark', label: 'Dark' },
-                  { value: 'system', label: 'System' },
-                ]}
-                placeholder="Select theme"
-              />
+      {/* Vehicle Numbers */}
+      <Card>
+        <div className="p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-text-primary border-b border-surface-2 pb-3">Vehicle Numbers</h2>
+          <p className="text-sm text-text-muted">Enter vehicle numbers separated by commas — these appear on invoices.</p>
+          <Input
+            value={vehicleInput}
+            onChange={e => setVehicleInput(e.target.value)}
+            placeholder="MH12AB1234, GJ01CD5678"
+          />
+          {vehicleInput && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {vehicleInput.split(',').map(v => v.trim()).filter(Boolean).map((v, i) => (
+                <span key={i} className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-primary-500/10 text-primary-500">
+                  {v}
+                </span>
+              ))}
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Language</label>
-              <Select
-                value={appearanceForm.language}
-                onChange={handleAppearanceChange}
-                options={[
-                  { value: 'en', label: 'English' },
-                  { value: 'es', label: 'Spanish' },
-                  { value: 'fr', label: 'French' },
-                  { value: 'de', label: 'German' },
-                ]}
-                placeholder="Select language"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-text-muted">Date Format</label>
-              <Select
-                value={appearanceForm.dateFormat}
-                onChange={handleAppearanceChange}
-                options={[
-                  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
-                  { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
-                  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
-                ]}
-                placeholder="Select date format"
-              />
-            </div>
-            <div className="space-y-4">
-              <p className="text-sm font-medium mb-2 text-text-primary">Notifications</p>
-              <div className="space-y-2">
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={appearanceForm.notifications.email}
-                    onChange={(e) => handleAppearanceChange({ target: { name: 'email', type: 'checkbox', checked: e.target.checked } } as React.ChangeEvent<HTMLInputElement>)}
-                    className="h-4 w-4 text-primary-500 focus:ring-primary-5 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <span className="text-text-muted">Email notifications</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={appearanceForm.notifications.push}
-                    onChange={(e) => handleAppearanceChange({ target: { name: 'push', type: 'checkbox', checked: e.target.checked } } as React.ChangeEvent<HTMLInputElement>)}
-                    className="h-4 w-4 text-primary-500 focus:ring-primary-5 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <span className="text-text-muted">Push notifications</span>
-                </label>
-                <label className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={appearanceForm.notifications.sms}
-                    onChange={(e) => handleAppearanceChange({ target: { name: 'sms', type: 'checkbox', checked: e.target.checked } } as React.ChangeEvent<HTMLInputElement>)}
-                    className="h-4 w-4 text-primary-500 focus:ring-primary-5 focus:ring-primary-500 border-gray-300 rounded"
-                  />
-                  <span className="text-text-muted">SMS notifications</span>
-                </label>
-              </div>
-            </div>
-          </form>
-          <div className="mt-6 flex justify-end">
-            <Button variant="outline" onClick={handleSaveAppearance}>
-              Save Changes
-            </Button>
-          </div>
+          )}
         </div>
       </Card>
+
+      <div className="flex items-center justify-end gap-4">
+        {saved && <p className="text-sm text-success">Settings saved successfully.</p>}
+        <Button variant="primary" onClick={handleSave} disabled={saving}>
+          {saving ? 'Saving...' : 'Save Settings'}
+        </Button>
+      </div>
     </div>
   );
 }

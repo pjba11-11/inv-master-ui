@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 // Mock data for customer notes (in a real app, this would be in a database)
-let customerNotes = {
+let customerNotes: Record<string, Array<{ id: string; customerId: string; note: string; createdAt: string }>> = {
   '1': [
     { id: '1', customerId: '1', note: 'Initial customer setup', createdAt: new Date().toISOString() },
     { id: '2', customerId: '1', note: 'Follow-up call scheduled', createdAt: new Date().toISOString() }
