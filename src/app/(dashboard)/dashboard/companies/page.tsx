@@ -75,6 +75,17 @@ export default function CompaniesPage() {
           <div className="border-b border-surface-2 pb-4">
             <h2 className="text-lg font-medium text-text-primary">General</h2>
           </div>
+          {company?.logoUrl && (
+            <div>
+              <p className="text-sm font-medium text-text-muted mb-2">Company Logo</p>
+              <img
+                src={company.logoUrl}
+                alt="Company logo"
+                className="h-16 w-auto rounded-lg object-contain"
+                style={{ background: 'var(--surface-2)', padding: '8px' }}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Company Name" value={company?.companyName} />
             <Field label="GST Number" value={company?.gstNumber} />
