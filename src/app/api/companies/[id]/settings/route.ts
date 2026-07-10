@@ -1,50 +1,38 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { backendFetch } from '@/lib/backend';
 
-// Shape matches SettingsDTO / CreateSettingsRequest from the backend.
-let settings = {
-  id: 1,
-  companyId: 1,
-  gstPercentage: 18.00,
-  cgstPercentage: 9.00,
-  sgstPercentage: 9.00,
-  vehicleNumbers: [] as string[],
-  defaultProfitMargin: 20.00,
-  currency: 'INR',
-  invoicePrefix: 'INV',
-  financialYear: '2024-25',
-  createdAt: '2023-01-15T08:00:00Z',
-  updatedAt: '2023-05-20T14:30:00Z',
-};
+// Backend derives company from JWT — URL company ID is not forwarded
+export async function GET(request: NextRequest) {
+  const resHeaders = new Headers();
+  const res = await backendFetch('/api/company/settings', {}, request, { headers: resHeaders });
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  if (Number(id) !== settings.companyId) {
-    return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
-  }
-  return NextResponse.json(settings);
+  if (res.status === 404) return NextResponse.json(null, { status: 404, headers: resHeaders });
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status, headers: resHeaders });
 }
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    if (Number(id) !== settings.companyId) {
-      return NextResponse.json({ error: 'Settings not found' }, { status: 404 });
-    }
-    const updates = await request.json();
-    settings = { ...settings, ...updates, updatedAt: new Date().toISOString() };
-    return NextResponse.json(settings);
-  } catch {
-    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
-  }
+export async function POST(request: NextRequest) {
+  const resHeaders = new Headers();
+  const body = await request.json();
+
+  const res = await backendFetch('/api/company/settings', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }, request, { headers: resHeaders });
+
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status, headers: resHeaders });
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    settings = { ...settings, ...body, companyId: Number(id), updatedAt: new Date().toISOString() };
-    return NextResponse.json(settings, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
-  }
+export async function PUT(request: NextRequest) {
+  const resHeaders = new Headers();
+  const body = await request.json();
+
+  const res = await backendFetch('/api/company/settings', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  }, request, { headers: resHeaders });
+
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status, headers: resHeaders });
 }

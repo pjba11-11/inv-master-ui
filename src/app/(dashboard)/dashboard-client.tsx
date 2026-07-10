@@ -3,49 +3,31 @@
 import { useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Navbar } from '@/components/layout/navbar';
+import { RouteProgress } from '@/components/layout/route-progress';
 
 interface DashboardClientProps {
   children: React.ReactNode;
-  navItems: Array<{
-    label: string;
-    href: string;
-    icon?: React.ReactNode;
-    activeOnly?: boolean;
-  }>;
+  navItems: Array<{ label: string; href: string; icon?: React.ReactNode }>;
 }
 
-export default function DashboardClient({
-  children,
-  navItems
-}: DashboardClientProps) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+export default function DashboardClient({ children, navItems }: DashboardClientProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
+      <RouteProgress />
       <Sidebar
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
         navItems={navItems}
       />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col ml-64">
-        {/* Navbar */}
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-60">
         <Navbar
-          leftItems={[
-            { label: 'Dashboard', href: '/dashboard' }
-          ]}
-          rightItems={[
-            { label: 'Profile', href: '/dashboard/profile' },
-            { label: 'Settings', href: '/dashboard/settings' }
-          ]}
-          showSearch={true}
-          showNotifications={true}
-          showUserMenu={true}
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          showSearch
+          showNotifications
+          showUserMenu
         />
-
-        {/* Page Content */}
         <main className="flex-1 p-6 bg-surface-0 overflow-auto">
           {children}
         </main>

@@ -1,96 +1,39 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { backendFetch } from '@/lib/backend';
 
-// Shape matches ProductFullResponse from the backend:
-//   productId, productName, description, active,
-//   manufacturingCost, sellingPrice, profitMargin,
-//   materials: [{ id, materialName, unit, currentPrice }]
-let products = [
-  {
-    productId: 1,
-    companyId: 1,
-    productName: 'Steel Frame',
-    description: 'Welded steel frame for industrial use',
-    active: true,
-    manufacturingCost: 1200.00,
-    sellingPrice: 1800.00,
-    profitMargin: 50.00,
-    materials: [
-      { id: 1, materialName: 'Steel Rod', unit: 'kg', currentPrice: 15.50 },
-    ],
-    createdAt: '2024-01-10T08:00:00Z',
-    updatedAt: '2024-01-10T08:00:00Z',
-    deletedAt: null as string | null,
-  },
-  {
-    productId: 2,
-    companyId: 1,
-    productName: 'Copper Cable Assembly',
-    description: 'Pre-wired copper cable assembly',
-    active: true,
-    manufacturingCost: 500.00,
-    sellingPrice: 750.00,
-    profitMargin: 50.00,
-    materials: [
-      { id: 2, materialName: 'Copper Wire', unit: 'm', currentPrice: 2.75 },
-    ],
-    createdAt: '2024-02-01T09:00:00Z',
-    updatedAt: '2024-02-01T09:00:00Z',
-    deletedAt: null as string | null,
-  },
-];
+export async function GET(request: NextRequest) {
+  const resHeaders = new Headers();
+  const res = await backendFetch('/products', {}, request, { headers: resHeaders });
+  const data = await res.json();
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search');
-  const active = searchParams.get('active');
+  if (!res.ok) return NextResponse.json(data, { status: res.status, headers: resHeaders });
 
-  let result = products.filter(p => !p.deletedAt);
+  const search = request.nextUrl.searchParams.get('search')?.toLowerCase();
+  const active = request.nextUrl.searchParams.get('active');
 
+  let result: any[] = data;
   if (search) {
-    const q = search.toLowerCase();
-    result = result.filter(p => p.productName.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q));
+    result = result.filter((p: any) =>
+      p.productName?.toLowerCase().includes(search) ||
+      p.description?.toLowerCase().includes(search)
+    );
   }
-
   if (active !== null) {
-    result = result.filter(p => p.active === (active === 'true'));
+    result = result.filter((p: any) => p.active === (active === 'true'));
   }
 
-  return NextResponse.json(result);
+  return NextResponse.json(result, { headers: resHeaders });
 }
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    if (!body.productName) {
-      return NextResponse.json({ error: 'productName is required' }, { status: 400 });
-    }
-    if (!body.materials || body.materials.length === 0) {
-      return NextResponse.json({ error: 'At least one material is required' }, { status: 400 });
-    }
+export async function POST(request: NextRequest) {
+  const resHeaders = new Headers();
+  const body = await request.json();
 
-    const manufacturingCost: number = body.manufacturingCost ?? 0;
-    const sellingPrice: number = body.sellingPrice ?? 0;
-    const profitMargin = manufacturingCost > 0
-      ? parseFloat((((sellingPrice - manufacturingCost) / manufacturingCost) * 100).toFixed(2))
-      : 0;
+  const res = await backendFetch('/products', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }, request, { headers: resHeaders });
 
-    const newProduct = {
-      productId: Date.now(),
-      companyId: body.companyId || 1,
-      productName: body.productName,
-      description: body.description || '',
-      active: body.active !== undefined ? body.active : true,
-      manufacturingCost,
-      sellingPrice,
-      profitMargin,
-      materials: body.materials,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      deletedAt: null as string | null,
-    };
-    products.push(newProduct);
-    return NextResponse.json(newProduct, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
-  }
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status, headers: resHeaders });
 }

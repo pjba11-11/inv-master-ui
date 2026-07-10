@@ -1,50 +1,44 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { backendFetch } from '@/lib/backend';
 
-let products = [
-  {
-    productId: 1, companyId: 1, productName: 'Steel Frame', description: 'Welded steel frame for industrial use',
-    active: true, manufacturingCost: 1200.00, sellingPrice: 1800.00, profitMargin: 50.00,
-    materials: [{ id: 1, materialName: 'Steel Rod', unit: 'kg', currentPrice: 15.50 }],
-    createdAt: '2024-01-10T08:00:00Z', updatedAt: '2024-01-10T08:00:00Z', deletedAt: null as string | null,
-  },
-  {
-    productId: 2, companyId: 1, productName: 'Copper Cable Assembly', description: 'Pre-wired copper cable assembly',
-    active: true, manufacturingCost: 500.00, sellingPrice: 750.00, profitMargin: 50.00,
-    materials: [{ id: 2, materialName: 'Copper Wire', unit: 'm', currentPrice: 2.75 }],
-    createdAt: '2024-02-01T09:00:00Z', updatedAt: '2024-02-01T09:00:00Z', deletedAt: null as string | null,
-  },
-];
-
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+// Backend has no GET /products/{id}, so fetch all and filter by productId
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const product = products.find(p => p.productId === Number(id) && !p.deletedAt);
+  const resHeaders = new Headers();
+
+  const res = await backendFetch('/products', {}, request, { headers: resHeaders });
+  if (!res.ok) return NextResponse.json({ error: 'Failed to fetch product' }, { status: res.status, headers: resHeaders });
+
+  const products: any[] = await res.json();
+  const product = products.find((p: any) => String(p.productId) === id);
+
   if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-  return NextResponse.json(product);
+  return NextResponse.json(product, { headers: resHeaders });
 }
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const index = products.findIndex(p => p.productId === Number(id) && !p.deletedAt);
-  if (index === -1) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-  try {
-    const body = await request.json();
-    const manufacturingCost: number = body.manufacturingCost ?? products[index].manufacturingCost;
-    const sellingPrice: number = body.sellingPrice ?? products[index].sellingPrice;
-    const profitMargin = manufacturingCost > 0
-      ? parseFloat((((sellingPrice - manufacturingCost) / manufacturingCost) * 100).toFixed(2))
-      : 0;
-    products[index] = { ...products[index], ...body, productId: Number(id), manufacturingCost, sellingPrice, profitMargin, updatedAt: new Date().toISOString() };
-    return NextResponse.json(products[index]);
-  } catch {
-    return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
-  }
+  const resHeaders = new Headers();
+  const body = await request.json();
+
+  const res = await backendFetch(`/products/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  }, request, { headers: resHeaders });
+
+  const data = await res.json();
+  return NextResponse.json(data, { status: res.status, headers: resHeaders });
 }
 
-// Soft delete
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const index = products.findIndex(p => p.productId === Number(id) && !p.deletedAt);
-  if (index === -1) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
-  products[index].deletedAt = new Date().toISOString();
-  return NextResponse.json({ message: 'Product deleted' });
+  const resHeaders = new Headers();
+
+  const res = await backendFetch(`/products/${id}`, {
+    method: 'DELETE',
+  }, request, { headers: resHeaders });
+
+  if (res.status === 204) return NextResponse.json({ message: 'Product deleted' }, { headers: resHeaders });
+  const data = await res.json().catch(() => ({}));
+  return NextResponse.json(data, { status: res.status, headers: resHeaders });
 }

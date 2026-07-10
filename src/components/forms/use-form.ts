@@ -4,7 +4,7 @@ interface FormValues {
   [key: string]: any;
 }
 
-interface FormErrors {
+export interface FormErrors {
   [key: string]: string;
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from './use-form';
+import { useForm, FormErrors } from './use-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -184,11 +184,11 @@ export const ProductForm = ({
 
       <div className="flex justify-end gap-3 pt-4">
         {!isEditMode && (
-          <Button variant="secondary" onClick={() => { resetForm(); setMaterials([{ materialName: '', unit: '', currentPrice: 0 }]); }}>
+          <Button variant="secondary" onClick={() => { resetForm(); setMaterials([{ materialName: '', hsnCode: '', unit: '', currentPrice: 0 }]); }}>
             Cancel
           </Button>
         )}
-        <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
+        <Button variant="primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : isEditMode ? 'Update Product' : 'Create Product'}
         </Button>
       </div>

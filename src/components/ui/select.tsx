@@ -8,6 +8,7 @@ interface SelectProps {
   disabled?: boolean;
   error?: boolean;
   className?: string;
+  onBlur?: (e: React.FocusEvent<HTMLSelectElement>) => void;
 }
 
 export const Select = ({
@@ -18,34 +19,32 @@ export const Select = ({
   disabled = false,
   error = false,
   className = '',
+  onBlur,
 }: SelectProps) => {
-  const baseClasses = `
-    block w-full rounded-md border border-neutral-300 bg-surface-2 
-    px-4 py-2 text-text-primary placeholder:text-text-muted 
-    focus-visible:ring-2 focus-visible:ring-primary-400 
-    focus-visible:border-transparent disabled:opacity-50 
-    disabled:cursor-not-allowed transition-all duration-200
-  `;
-
-  const errorClasses = error
-    ? 'border-error bg-error/10 focus-visible:ring-error/20'
-    : '';
-
   return (
     <select
+      onBlur={onBlur}
       value={String(value)}
       onChange={onChange}
       disabled={disabled}
-      className={`${baseClasses} ${errorClasses} ${className}`}
+      className={`block w-full rounded-lg px-3.5 py-2.5 text-sm text-text-primary
+        bg-surface-2 outline-none transition-all duration-150
+        focus:ring-1 focus:ring-primary-500/50
+        disabled:opacity-40 disabled:cursor-not-allowed
+        ${error ? 'ring-1 ring-error/60' : ''}
+        ${className}`}
+      style={{
+        border: `1px solid ${error ? 'var(--error)' : 'var(--border-default)'}`,
+      }}
     >
       {placeholder && (
-        <option value="" disabled hidden>
+        <option value="" disabled hidden className="bg-surface-2">
           {placeholder}
         </option>
       )}
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
+      {options.map(opt => (
+        <option key={opt.value} value={opt.value} className="bg-surface-2 text-text-primary">
+          {opt.label}
         </option>
       ))}
     </select>

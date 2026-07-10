@@ -95,16 +95,18 @@ export const InvoicesTable = ({
                   </Badge>
                 </td>
                 <td className="px-4 py-4 text-sm space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMarkAsPaid?.(invoice.id);
-                    }}
-                  >
-                    Mark as Paid
-                  </Button>
+                  {onMarkAsPaid && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMarkAsPaid(invoice.id);
+                      }}
+                    >
+                      Mark as Paid
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -112,25 +114,8 @@ export const InvoicesTable = ({
         </table>
       </div>
       
-      {/* Summary */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
-        <div className="text-sm text-text-muted">
-          Showing {invoices.length} {invoices.length === 1 ? 'invoice' : 'invoices'}
-        </div>
-        <div className="flex space-x-3 mt-3 sm:mt-0">
-          <Button 
-            variant="outline" 
-            size="sm"
-          >
-            Export CSV
-          </Button>
-          <Button 
-            variant="secondary" 
-            size="sm"
-          >
-            Print
-          </Button>
-        </div>
+      <div className="text-sm text-text-muted">
+        Showing {invoices.length} {invoices.length === 1 ? 'invoice' : 'invoices'}
       </div>
     </div>
   );

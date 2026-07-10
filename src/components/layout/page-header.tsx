@@ -1,44 +1,28 @@
-import { Button } from '@/components/ui/button';
-import { Breadcrumbs } from './breadcrumbs';
-
 interface PageHeaderProps {
   title: string;
   description?: string;
-  actions?: React.ReactNode;
+  children?: React.ReactNode;
+  // kept for backward compat — navbar now handles breadcrumbs
   showBreadcrumbs?: boolean;
   breadcrumbItems?: Array<{ label: string; href: string }>;
-  children?: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
-export const PageHeader = ({
-  title,
-  description,
-  actions,
-  showBreadcrumbs = true,
-  breadcrumbItems = [],
-  children
-}: PageHeaderProps) => {
+export const PageHeader = ({ title, description, children, actions }: PageHeaderProps) => {
   return (
-    <div className="border-b border-surface-2 pb-4 mb-6">
-      {showBreadcrumbs && (
-        <Breadcrumbs items={breadcrumbItems} />
-      )}
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mt-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-text-primary">{title}</h1>
-          {description && (
-            <p className="text-text-muted">{description}</p>
-          )}
-        </div>
-
-        {actions && (
-          <div className="mt-4 md:mt-0 space-x-3">
-            {actions}
-          </div>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h1 className="text-xl font-semibold text-text-primary tracking-tight">{title}</h1>
+        {description && (
+          <p className="text-sm text-text-muted mt-0.5">{description}</p>
         )}
       </div>
-      {children && <div className="mt-6">{children}</div>}
+      {(children || actions) && (
+        <div className="flex items-center gap-2 shrink-0">
+          {actions}
+          {children}
+        </div>
+      )}
     </div>
   );
 };

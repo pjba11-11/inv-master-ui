@@ -1,4 +1,4 @@
-import { useForm } from './use-form';
+import { useForm, FormErrors } from './use-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
@@ -93,7 +93,7 @@ export const MaterialForm = ({
         {!isEditMode && (
           <Button variant="secondary" onClick={() => resetForm()}>Cancel</Button>
         )}
-        <Button variant="primary" onClick={handleSubmit} disabled={isSubmitting}>
+        <Button variant="primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : isEditMode ? 'Update Material' : 'Create Material'}
         </Button>
       </div>
