@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { FormSkeleton } from '@/components/ui/skeleton';
 import { CustomerForm } from '@/components/forms/customer-form';
 import { useParams, useRouter } from 'next/navigation';
+import { WriteGuard } from '@/components/guards/write-guard';
 
 export default function EditCustomerPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ export default function EditCustomerPage() {
   if (!customer) { router.push('/dashboard/customers'); return null; }
 
   return (
+    <WriteGuard redirectTo="/dashboard/customers">
     <div className="space-y-6">
       <PageHeader
         title="Edit Customer"
@@ -51,14 +53,14 @@ export default function EditCustomerPage() {
         onSubmit={handleSubmit}
         initialData={{
           customerName: customer.customerName,
-          email: customer.email,
-          phone: customer.phone,
-          gstNumber: customer.gstNumber,
-          billingAddress: customer.billingAddress,
-          shippingAddress: customer.shippingAddress,
+          email: customer.email ?? '',
+          phone: customer.phone ?? '',
+          gstNumber: customer.gstNumber ?? '',
+          address: customer.address ?? '',
         }}
         isEditMode={true}
       />
     </div>
+    </WriteGuard>
   );
 }

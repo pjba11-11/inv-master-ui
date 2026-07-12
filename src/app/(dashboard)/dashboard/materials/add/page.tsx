@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { MaterialForm } from '@/components/forms/material-form';
 import { useRouter } from 'next/navigation';
+import { WriteGuard } from '@/components/guards/write-guard';
 
 export default function AddMaterialPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function AddMaterialPage() {
   };
 
   return (
+    <WriteGuard redirectTo="/dashboard/materials">
     <div className="space-y-6">
       <PageHeader
         title="Add Material"
@@ -34,5 +36,6 @@ export default function AddMaterialPage() {
 
       <MaterialForm onSubmit={handleSubmit} isEditMode={false} />
     </div>
+    </WriteGuard>
   );
 }

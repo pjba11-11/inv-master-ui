@@ -10,6 +10,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useRole } from '@/hooks/use-role';
 
 type InvoiceStatus = 'GENERATED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
 
@@ -18,6 +19,7 @@ interface Invoice {
   invoiceNumber: string;
   invoiceDate: string;
   customerId: number | null;
+  customerName?: string;
   subtotal: number;
   cgst: number;
   sgst: number;
@@ -25,6 +27,7 @@ interface Invoice {
   grandTotal: number;
   status: InvoiceStatus;
   remarks: string;
+  createdByName?: string;
 }
 
 const statusBadge: Record<InvoiceStatus, string> = {
@@ -35,6 +38,7 @@ const statusBadge: Record<InvoiceStatus, string> = {
 };
 
 export default function InvoicesPage() {
+  const { canWrite } = useRole();
   const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +64,7 @@ export default function InvoicesPage() {
   if (loading) return (
     <div className="space-y-6">
       <PageHeader title="Invoices" description="Manage and track all your invoices">
-        <Link href="/dashboard/invoices/create"><Button variant="primary">New Invoice</Button></Link>
+        {canWrite && <Link href="/dashboard/invoices/create"><Button variant="primary">New Invoice</Button></Link>}
       </PageHeader>
       <StatCardSkeleton />
       <TableSkeleton rows={5} cols={5} />
@@ -80,9 +84,11 @@ export default function InvoicesPage() {
           { label: 'Invoices', href: '/dashboard/invoices' },
         ]}
       >
-        <Link href="/dashboard/invoices/create">
-          <Button variant="primary">New Invoice</Button>
-        </Link>
+        {canWrite && (
+          <Link href="/dashboard/invoices/create">
+            <Button variant="primary">New Invoice</Button>
+          </Link>
+        )}
       </PageHeader>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -101,9 +107,11 @@ export default function InvoicesPage() {
               <thead>
                 <tr className="bg-surface-2">
                   <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Number</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Customer</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Date</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Grand Total</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Created By</th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Actions</th>
                 </tr>
               </thead>
@@ -111,6 +119,7 @@ export default function InvoicesPage() {
                 {invoices.map(inv => (
                   <tr key={inv.id} className="hover:bg-surface-1">
                     <td className="px-4 py-4 text-text-primary font-medium">{inv.invoiceNumber}</td>
+                    <td className="px-4 py-4 text-text-muted text-sm">{inv.customerName ?? '—'}</td>
                     <td className="px-4 py-4 text-text-primary">{inv.invoiceDate}</td>
                     <td className="px-4 py-4 text-text-primary">₹{Number(inv.grandTotal).toFixed(2)}</td>
                     <td className="px-4 py-4">
@@ -118,6 +127,7 @@ export default function InvoicesPage() {
                         {inv.status.replace('_', ' ')}
                       </span>
                     </td>
+                    <td className="px-4 py-4 text-text-muted text-sm">{inv.createdByName ?? '—'}</td>
                     <td className="px-4 py-4 text-sm space-x-2">
                       <Link href={`/dashboard/invoices/${inv.id}`}>
                         <Button variant="outline" size="sm">View</Button>

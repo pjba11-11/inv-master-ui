@@ -1,12 +1,25 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { backendFetch } from '@/lib/backend';
 
-// Dummy PDF endpoint — real implementation would call the Spring Boot backend
-// which generates the PDF server-side and returns binary content.
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const outResponse = new NextResponse();
+  const res = await backendFetch(`/invoices/${id}/pdf`, { method: 'GET' }, request, outResponse);
 
-  return NextResponse.json({
-    message: 'PDF generation is handled by the Spring Boot backend. Integrate with GET /invoices/{id}/pdf once the backend is running.',
-    invoiceId: id,
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: 'Failed to generate PDF' }));
+    return NextResponse.json(body, { status: res.status });
+  }
+
+  const pdf = await res.arrayBuffer();
+  const filename = res.headers.get('Content-Disposition')?.match(/filename="?([^"]+)"?/)?.[1]
+    ?? `invoice-${id}.pdf`;
+
+  return new NextResponse(pdf, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+    },
   });
 }

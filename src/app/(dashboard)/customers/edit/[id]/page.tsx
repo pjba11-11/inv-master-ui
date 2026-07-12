@@ -50,11 +50,10 @@ export default function EditCustomerPage() {
         onSubmit={handleSubmit}
         initialData={{
           customerName: customer.customerName,
-          email: customer.email,
-          phone: customer.phone,
-          gstNumber: customer.gstNumber,
-          billingAddress: customer.billingAddress,
-          shippingAddress: customer.shippingAddress,
+          email: customer.email ?? '',
+          phone: customer.phone ?? '',
+          gstNumber: customer.gstNumber ?? '',
+          address: customer.address ?? '',
         }}
         isEditMode={true}
       />

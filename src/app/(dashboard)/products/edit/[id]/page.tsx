@@ -50,12 +50,13 @@ export default function EditProductPage() {
         onSubmit={handleSubmit}
         initialData={{
           productName: product.productName,
-          description: product.description,
-          manufacturingCost: product.manufacturingCost,
-          sellingPrice: product.sellingPrice,
+          description: product.description ?? '',
+          hsnCode: product.hsnCode ?? '',
+          labourCharges: product.labourCharges ?? 0,
+          profitMargin: product.profitMargin ?? 0,
           active: product.active,
         }}
-        initialMaterials={product.materials ?? []}
+        initialMaterialIds={(product.materials ?? []).map((m: any) => m.materialId)}
         isEditMode={true}
       />
     </div>

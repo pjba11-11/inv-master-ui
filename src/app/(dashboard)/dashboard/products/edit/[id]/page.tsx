@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { FormSkeleton } from '@/components/ui/skeleton';
 import { ProductForm } from '@/components/forms/product-form';
 import { useParams, useRouter } from 'next/navigation';
+import { WriteGuard } from '@/components/guards/write-guard';
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ export default function EditProductPage() {
   if (!product) { router.push('/dashboard/products'); return null; }
 
   return (
+    <WriteGuard redirectTo="/dashboard/products">
     <div className="space-y-6">
       <PageHeader
         title="Edit Product"
@@ -51,14 +53,16 @@ export default function EditProductPage() {
         onSubmit={handleSubmit}
         initialData={{
           productName: product.productName,
-          description: product.description,
-          manufacturingCost: product.manufacturingCost,
-          sellingPrice: product.sellingPrice,
+          description: product.description ?? '',
+          hsnCode: product.hsnCode ?? '',
+          labourCharges: product.labourCharges ?? 0,
+          profitMargin: product.profitMargin ?? 0,
           active: product.active,
         }}
-        initialMaterials={product.materials ?? []}
+        initialMaterialIds={(product.materials ?? []).map((m: any) => m.materialId)}
         isEditMode={true}
       />
     </div>
+    </WriteGuard>
   );
 }

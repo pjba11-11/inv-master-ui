@@ -9,6 +9,7 @@ import { TableSkeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
+import { useRole } from '@/hooks/use-role';
 
 interface Customer {
   id: number;
@@ -16,11 +17,11 @@ interface Customer {
   email: string;
   phone: string;
   gstNumber: string;
-  billingAddress: string;
-  deletedAt: string | null;
+  address: string;
 }
 
 export default function CustomersPage() {
+  const { canWrite } = useRole();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -76,9 +77,11 @@ export default function CustomersPage() {
         ]}
       >
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/dashboard/customers/add">
-            <Button variant="primary">Add Customer</Button>
-          </Link>
+          {canWrite && (
+            <Link href="/dashboard/customers/add">
+              <Button variant="primary">Add Customer</Button>
+            </Link>
+          )}
           <Input
             type="search"
             placeholder="Search customers..."
@@ -117,16 +120,20 @@ export default function CustomersPage() {
                         <Link href={`/dashboard/customers/${c.id}`}>
                           <Button variant="outline" size="sm">View</Button>
                         </Link>
-                        <Link href={`/dashboard/customers/edit/${c.id}`}>
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </Link>
-                        {confirmDeleteId === c.id ? (
+                        {canWrite && (
                           <>
-                            <Button variant="destructive" size="sm" loading={deleting} onClick={() => handleDelete(c.id)}>Confirm?</Button>
-                            <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+                            <Link href={`/dashboard/customers/edit/${c.id}`}>
+                              <Button variant="outline" size="sm">Edit</Button>
+                            </Link>
+                            {confirmDeleteId === c.id ? (
+                              <>
+                                <Button variant="destructive" size="sm" loading={deleting} onClick={() => handleDelete(c.id)}>Confirm?</Button>
+                                <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+                              </>
+                            ) : (
+                              <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteId(c.id)}>Delete</Button>
+                            )}
                           </>
-                        ) : (
-                          <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteId(c.id)}>Delete</Button>
                         )}
                       </div>
                     </td>
@@ -138,11 +145,23 @@ export default function CustomersPage() {
             <EmptyState
               title={searchTerm ? 'No results match your search' : 'No customers yet'}
               description={searchTerm ? 'Try a different search term.' : 'Add your first customer to get started.'}
-              action={!searchTerm ? <Link href="/dashboard/customers/add"><Button variant="primary" size="sm">Add Customer</Button></Link> : undefined}
+              action={!searchTerm && canWrite ? <Link href="/dashboard/customers/add"><Button variant="primary" size="sm">Add Customer</Button></Link> : undefined}
             />
           )}
         </div>
       </Card>
+
+      {customers.length > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-primary-500/30 bg-primary-500/5 px-5 py-4">
+          <div>
+            <p className="text-sm font-medium text-text-primary">Ready to create an invoice?</p>
+            <p className="text-xs text-text-muted mt-0.5">You have {customers.length} customer{customers.length !== 1 ? 's' : ''} — you can now create your first invoice.</p>
+          </div>
+          <Link href="/dashboard/invoices/create">
+            <Button variant="primary" size="sm">Create Invoice →</Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

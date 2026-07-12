@@ -1,27 +1,31 @@
 'use client';
 
 import { useState } from 'react';
-import { Sidebar } from '@/components/layout/sidebar';
+import { Sidebar, NavSection } from '@/components/layout/sidebar';
 import { Navbar } from '@/components/layout/navbar';
 import { RouteProgress } from '@/components/layout/route-progress';
 
 interface DashboardClientProps {
   children: React.ReactNode;
-  navItems: Array<{ label: string; href: string; icon?: React.ReactNode }>;
+  navSections: NavSection[];
 }
 
-export default function DashboardClient({ children, navItems }: DashboardClientProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+export default function DashboardClient({ children, navSections }: DashboardClientProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <div className="flex min-h-screen">
       <RouteProgress />
       <Sidebar
         isOpen={sidebarOpen}
+        collapsed={collapsed}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
-        navItems={navItems}
+        onCollapseToggle={() => setCollapsed(!collapsed)}
+        navSections={navSections}
       />
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-60">
+      {/* Main content shifts with sidebar width on desktop */}
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${collapsed ? 'lg:ml-14' : 'lg:ml-60'}`}>
         <Navbar
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           showSearch

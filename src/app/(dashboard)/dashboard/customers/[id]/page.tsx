@@ -14,9 +14,7 @@ interface Customer {
   email: string;
   phone: string;
   gstNumber: string;
-  billingAddress: string;
-  shippingAddress: string;
-  companyId: number;
+  address: string;
 }
 
 export default function CustomerViewPage() {
@@ -79,13 +77,9 @@ export default function CustomerViewPage() {
               <p className="text-sm font-medium text-text-muted">GST Number</p>
               <p className="text-text-primary">{customer.gstNumber || '—'}</p>
             </div>
-            <div>
-              <p className="text-sm font-medium text-text-muted">Billing Address</p>
-              <p className="text-text-primary whitespace-pre-line">{customer.billingAddress || '—'}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-text-muted">Shipping Address</p>
-              <p className="text-text-primary whitespace-pre-line">{customer.shippingAddress || '—'}</p>
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-text-muted">Address</p>
+              <p className="text-text-primary whitespace-pre-line">{customer.address || '—'}</p>
             </div>
           </div>
         </div>
