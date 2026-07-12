@@ -104,13 +104,15 @@ export default function InvoiceDetailPage() {
     try {
       const res = await fetch(`/api/invoices/${id}/pdf`);
       if (res.ok) {
-        const blob = await res.blob();
+        const blob = new Blob([await res.arrayBuffer()], { type: 'application/pdf' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `invoice-${invoice?.invoiceNumber ?? id}.pdf`;
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     } finally {
       setDownloading(false);

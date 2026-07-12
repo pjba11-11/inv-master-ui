@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { FormSkeleton } from '@/components/ui/skeleton';
 import { MaterialForm } from '@/components/forms/material-form';
 import { useParams, useRouter } from 'next/navigation';
+import { WriteGuard } from '@/components/guards/write-guard';
 
 export default function EditMaterialPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ export default function EditMaterialPage() {
   if (!material) { router.push('/dashboard/materials'); return null; }
 
   return (
+    <WriteGuard redirectTo="/dashboard/materials">
     <div className="space-y-6">
       <PageHeader
         title="Edit Material"
@@ -58,5 +60,6 @@ export default function EditMaterialPage() {
         isEditMode={true}
       />
     </div>
+    </WriteGuard>
   );
 }

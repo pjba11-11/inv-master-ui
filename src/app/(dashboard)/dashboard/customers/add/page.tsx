@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { CustomerForm } from '@/components/forms/customer-form';
 import { useRouter } from 'next/navigation';
+import { WriteGuard } from '@/components/guards/write-guard';
 
 export default function AddCustomerPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function AddCustomerPage() {
   };
 
   return (
+    <WriteGuard redirectTo="/dashboard/customers">
     <div className="space-y-6">
       <PageHeader
         title="Add Customer"
@@ -34,5 +36,6 @@ export default function AddCustomerPage() {
 
       <CustomerForm onSubmit={handleSubmit} isEditMode={false} />
     </div>
+    </WriteGuard>
   );
 }

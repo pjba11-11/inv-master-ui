@@ -8,8 +8,7 @@ interface CustomerFormValues {
   email: string;
   phone: string;
   gstNumber: string;
-  billingAddress: string;
-  shippingAddress: string;
+  address: string;
 }
 
 export const CustomerForm = ({
@@ -26,15 +25,16 @@ export const CustomerForm = ({
     email: '',
     phone: '',
     gstNumber: '',
-    billingAddress: '',
-    shippingAddress: '',
+    address: '',
     ...initialData,
   };
 
   const validate = (values: CustomerFormValues) => {
     const errors: Partial<Record<keyof CustomerFormValues, string>> = {};
     if (!values.customerName.trim()) errors.customerName = 'Customer name is required';
-    if (values.email && !/\S+@\S+\.\S+/.test(values.email)) errors.email = 'Email address is invalid';
+    if (!values.phone.trim()) errors.phone = 'Phone number is required';
+    if (!values.address.trim()) errors.address = 'Billing address is required';
+    if (values.email && !/\S+@\S+\.\S+/.test(values.email)) errors.email = 'Invalid email address';
     return errors as FormErrors;
   };
 
@@ -56,6 +56,18 @@ export const CustomerForm = ({
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-text-muted mb-1">Phone *</label>
+          <Input
+            type="tel"
+            value={values.phone}
+            onChange={(e) => handleChange('phone', e.target.value)}
+            onBlur={() => handleBlur('phone')}
+            placeholder="Enter phone number"
+          />
+          {errors.phone && <p className="mt-1 text-sm text-error">{errors.phone}</p>}
+        </div>
+
+        <div>
           <label className="block text-sm font-medium text-text-muted mb-1">Email</label>
           <Input
             type="email"
@@ -68,52 +80,31 @@ export const CustomerForm = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">Phone</label>
-          <Input
-            type="tel"
-            value={values.phone}
-            onChange={(e) => handleChange('phone', e.target.value)}
-            onBlur={() => handleBlur('phone')}
-            placeholder="Enter phone number"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">GST Number</label>
+          <label className="block text-sm font-medium text-text-muted mb-1">GST Number (GSTIN)</label>
           <Input
             value={values.gstNumber}
             onChange={(e) => handleChange('gstNumber', e.target.value)}
             onBlur={() => handleBlur('gstNumber')}
-            placeholder="Enter GST number (optional)"
+            placeholder="e.g. 29ABCDE1234F1Z5"
           />
         </div>
       </div>
 
       <div className="border-t border-surface-2 pt-6">
-        <h2 className="text-lg font-semibold text-text-primary mb-4">Billing Address</h2>
+        <h2 className="text-lg font-semibold text-text-primary mb-2">Billing Address *</h2>
         <Textarea
-          value={values.billingAddress}
-          onChange={(e) => handleChange('billingAddress', e.target.value)}
-          onBlur={() => handleBlur('billingAddress')}
+          value={values.address}
+          onChange={(e) => handleChange('address', e.target.value)}
+          onBlur={() => handleBlur('address')}
           placeholder="Enter full billing address"
           rows={3}
         />
-      </div>
-
-      <div className="border-t border-surface-2 pt-6">
-        <h2 className="text-lg font-semibold text-text-primary mb-4">Shipping Address (optional)</h2>
-        <Textarea
-          value={values.shippingAddress}
-          onChange={(e) => handleChange('shippingAddress', e.target.value)}
-          onBlur={() => handleBlur('shippingAddress')}
-          placeholder="Enter full shipping address (leave blank if same as billing)"
-          rows={3}
-        />
+        {errors.address && <p className="mt-1 text-sm text-error">{errors.address}</p>}
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
         {!isEditMode && (
-          <Button variant="secondary" onClick={() => resetForm()}>Cancel</Button>
+          <Button variant="secondary" type="button" onClick={() => resetForm()}>Cancel</Button>
         )}
         <Button variant="primary" type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Saving...' : isEditMode ? 'Update Customer' : 'Create Customer'}

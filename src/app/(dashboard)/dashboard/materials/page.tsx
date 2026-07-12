@@ -9,6 +9,7 @@ import { TableSkeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
+import { useRole } from '@/hooks/use-role';
 
 interface Material {
   id: number;
@@ -19,6 +20,7 @@ interface Material {
 }
 
 export default function MaterialsPage() {
+  const { canWrite } = useRole();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -72,9 +74,11 @@ export default function MaterialsPage() {
         ]}
       >
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/dashboard/materials/add">
-            <Button variant="primary">Add Material</Button>
-          </Link>
+          {canWrite && (
+            <Link href="/dashboard/materials/add">
+              <Button variant="primary">Add Material</Button>
+            </Link>
+          )}
           <Input
             type="search"
             placeholder="Search materials..."
@@ -117,16 +121,20 @@ export default function MaterialsPage() {
                         <Link href={`/dashboard/materials/${m.id}`}>
                           <Button variant="outline" size="sm">View</Button>
                         </Link>
-                        <Link href={`/dashboard/materials/edit/${m.id}`}>
-                          <Button variant="outline" size="sm">Edit</Button>
-                        </Link>
-                        {confirmDeleteId === m.id ? (
+                        {canWrite && (
                           <>
-                            <Button variant="destructive" size="sm" loading={deleting} onClick={() => handleDelete(m.id)}>Confirm?</Button>
-                            <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+                            <Link href={`/dashboard/materials/edit/${m.id}`}>
+                              <Button variant="outline" size="sm">Edit</Button>
+                            </Link>
+                            {confirmDeleteId === m.id ? (
+                              <>
+                                <Button variant="destructive" size="sm" loading={deleting} onClick={() => handleDelete(m.id)}>Confirm?</Button>
+                                <Button variant="ghost" size="sm" onClick={() => setConfirmDeleteId(null)}>Cancel</Button>
+                              </>
+                            ) : (
+                              <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteId(m.id)}>Delete</Button>
+                            )}
                           </>
-                        ) : (
-                          <Button variant="destructive" size="sm" onClick={() => setConfirmDeleteId(m.id)}>Delete</Button>
                         )}
                       </div>
                     </td>
@@ -138,11 +146,23 @@ export default function MaterialsPage() {
             <EmptyState
               title={searchTerm ? 'No results match your search' : 'No materials yet'}
               description={searchTerm ? 'Try a different search term.' : 'Add your first material to get started.'}
-              action={!searchTerm ? <Link href="/dashboard/materials/add"><Button variant="primary" size="sm">Add Material</Button></Link> : undefined}
+              action={!searchTerm && canWrite ? <Link href="/dashboard/materials/add"><Button variant="primary" size="sm">Add Material</Button></Link> : undefined}
             />
           )}
         </div>
       </Card>
+
+      {materials.length > 0 && (
+        <div className="flex items-center justify-between rounded-xl border border-primary-500/30 bg-primary-500/5 px-5 py-4">
+          <div>
+            <p className="text-sm font-medium text-text-primary">Ready to build products?</p>
+            <p className="text-xs text-text-muted mt-0.5">You have {materials.length} material{materials.length !== 1 ? 's' : ''} — next step is creating products that bundle them.</p>
+          </div>
+          <Link href="/dashboard/products/add">
+            <Button variant="primary" size="sm">Add Product →</Button>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
