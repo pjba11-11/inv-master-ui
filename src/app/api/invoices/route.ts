@@ -1,13 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/backend';
-
-function normalizeInvoice(inv: Record<string, unknown>) {
-  // Backend uses invoiceId; UI uses id
-  if ('invoiceId' in inv && !('id' in inv)) {
-    return { ...inv, id: inv.invoiceId };
-  }
-  return inv;
-}
+import { normalizeInvoice } from '@/lib/normalize';
 
 export async function GET(request: NextRequest) {
   const outResponse = new NextResponse();
