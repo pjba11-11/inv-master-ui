@@ -19,7 +19,12 @@ export function decodeJwtPayload(token: string): Record<string, unknown> {
   return JSON.parse(Buffer.from(padded, 'base64').toString('utf8'));
 }
 
-async function refreshAccessToken(refreshToken: string): Promise<string | null> {
+interface RefreshedTokens {
+  accessToken: string;
+  refreshToken: string | null;
+}
+
+async function refreshTokens(refreshToken: string): Promise<RefreshedTokens | null> {
   try {
     const res = await fetch(backendUrl('/auth/refresh'), {
       method: 'POST',
@@ -27,8 +32,9 @@ async function refreshAccessToken(refreshToken: string): Promise<string | null> 
       body: JSON.stringify({ refreshToken }),
     });
     if (!res.ok) return null;
-    const { accessToken } = await res.json();
-    return accessToken ?? null;
+    const data = await res.json();
+    if (!data.accessToken) return null;
+    return { accessToken: data.accessToken, refreshToken: data.refreshToken ?? null };
   } catch {
     return null;
   }
@@ -62,21 +68,29 @@ export async function backendFetch(
   });
 
   if (res.status === 401 && refreshToken) {
-    const newAccessToken = await refreshAccessToken(refreshToken);
-    if (newAccessToken) {
+    const refreshed = await refreshTokens(refreshToken);
+    if (refreshed) {
       res = await fetch(backendUrl(path), {
         ...options,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
-          Authorization: `Bearer ${newAccessToken}`,
+          Authorization: `Bearer ${refreshed.accessToken}`,
         },
       });
 
-      // Propagate the new token as a cookie via outResponse headers
+      // Propagate the rotated tokens as cookies via outResponse headers
       if (outResponse) {
-        const cookieValue = `auth_token=${newAccessToken}; HttpOnly; Path=/; Max-Age=${60 * 60 * 8}; SameSite=Lax`;
-        outResponse.headers.set('Set-Cookie', cookieValue);
+        outResponse.headers.append(
+          'Set-Cookie',
+          `auth_token=${refreshed.accessToken}; HttpOnly; Path=/; Max-Age=${60 * 60 * 8}; SameSite=Lax`,
+        );
+        if (refreshed.refreshToken) {
+          outResponse.headers.append(
+            'Set-Cookie',
+            `refresh_token=${refreshed.refreshToken}; HttpOnly; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`,
+          );
+        }
       }
     }
   }
