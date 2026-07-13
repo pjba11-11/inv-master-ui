@@ -1,70 +1,79 @@
 # inv-master-ui
 
-Frontend for the Invoice Master application — built with **Next.js 16** and **React 19**.
+Frontend for the Invoice Master application — built with **Next.js 16** and **React 19**, fully wired to the [Spring Boot backend](https://github.com/pjba11-11/inv-master-001).
 
 ## Stack
 
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 16 (App Router) |
-| UI | React 19, Tailwind CSS |
-| API | Next.js Route Handlers (mock data, wired to match backend DTOs) |
+| UI | React 19, Tailwind CSS v4 |
+| API | Next.js Route Handlers proxying the Spring Boot backend |
+| Auth | HTTP-only cookie JWT; role stored client-side for UI gating |
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── (auth)/           # Login, Register, Forgot Password
-│   ├── (dashboard)/      # Dashboard, Invoices, Customers, Products, Materials, Companies, Reports, Settings
-│   └── api/              # Route handlers — mock data with field names matching backend DTOs
+│   ├── (auth)/           # Login, two-step company registration (with logo upload)
+│   ├── (dashboard)/      # Dashboard, Invoices, Customers, Products, Materials, Settings
+│   └── api/              # Route handlers — thin proxies to the backend at :8080
 │       ├── auth/         # login, logout, register
-│       ├── companies/    # company profile + [id]/settings
-│       ├── customers/    # CRUD + [id]/notes
+│       ├── admin/        # user management (admin only)
+│       ├── customers/    # CRUD
 │       ├── invoices/     # CRUD + [id]/line-items, [id]/payments, [id]/pdf
 │       ├── materials/    # CRUD + [id]/price-history
-│       └── products/     # CRUD
-└── components/
-    ├── forms/            # CustomerForm, ProductForm, MaterialForm, CompanyForm, InvoiceForm
-    ├── layout/           # Sidebar, Navbar, Breadcrumbs
-    ├── ui/               # Button, Input, Select, Card, Badge, etc.
-    └── widgets/          # RevenueChart, InvoicesTable, StatCard
+│       ├── products/     # CRUD
+│       └── settings/     # company tax + invoice settings
+├── components/
+│   ├── forms/            # CustomerForm, ProductForm, MaterialForm, InvoiceForm
+│   ├── guards/           # WriteGuard — redirects read-only users away from write pages
+│   ├── layout/           # Sidebar (collapsible, grouped nav, profile footer), Navbar
+│   ├── ui/               # Button, Input, Select, Card, Badge, etc.
+│   └── widgets/          # RevenueChart, InvoicesTable, StatCard
+└── hooks/
+    └── use-role.ts       # Reads role from session; exposes canWrite
 ```
 
 ## Getting Started
+
+1. Start the backend (PostgreSQL + Spring Boot on `http://localhost:8080`) — see the [backend README](https://github.com/pjba11-11/inv-master-001).
+
+2. Run the frontend:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) and register a company, or log in with an existing user.
 
-### Default mock credentials
+### Docker
 
-| Role | Email | Password |
-|---|---|---|
-| Admin | admin@example.com | admin123 |
-| Manager | manager@example.com | manager123 |
-| Employee | employee@example.com | employee123 |
+```bash
+docker build -t inv-master-ui .
+docker run -p 3000:3000 inv-master-ui
+```
 
-## API → Backend Mapping
+## Role-Based UI
 
-Route handlers under `src/app/api/` use in-memory mock data. Field names match the Spring Boot backend DTOs exactly so each handler can be replaced with a `fetch` call once the backend is running.
+The JWT role claim (`ADMIN` / `MANAGER` / `EMPLOYEE`) drives what users see:
 
-| UI Route | Backend Endpoint |
-|---|---|
-| `POST /api/auth/login` | `POST /auth/login` → `{ accessToken, refreshToken }` |
-| `POST /api/auth/register` (type: company) | `POST /auth/company/register` |
-| `POST /api/auth/register` (type: user) | `POST /auth/user/register` |
-| `GET/PUT /api/companies` | Company entity |
-| `GET/PUT /api/companies/[id]/settings` | Settings entity |
-| `GET/POST /api/customers` | Customers entity |
-| `GET/POST /api/materials` | Materials entity |
-| `GET/POST /api/products` | `GET/POST /products` (ProductFullResponse) |
-| `GET/POST /api/invoices` | Invoices entity |
-| `GET/POST /api/invoices/[id]/line-items` | InvoiceLineItems entity |
-| `GET/POST /api/invoices/[id]/payments` | Payments entity |
+| Capability | ADMIN | MANAGER | EMPLOYEE |
+|---|---|---|---|
+| View all pages | ✓ | ✓ | ✓ |
+| Add / edit / delete records | ✓ | ✓ | — |
+| Save settings | ✓ | ✓ | — |
+| Team Members (list + create users) | ✓ | — | — |
+
+- `useRole()` gates buttons on list pages
+- `<WriteGuard>` wraps every add/edit/create page and redirects unauthorized users
+- The backend enforces the same rules with `@PreAuthorize` — the UI gating is UX, not security
+
+## API Proxy
+
+Route handlers under `src/app/api/` forward requests to the backend via `src/lib/backend.ts`, attaching the JWT from the HTTP-only cookie. Field names map 1:1 to backend DTOs; invoices additionally expose `customerName` and `createdByName` for the audit trail columns.
 
 ## Backend
 
