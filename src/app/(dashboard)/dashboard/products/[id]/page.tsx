@@ -16,6 +16,7 @@ interface Product {
   sellingPrice: number;
   profitMargin: number;
   materials: { materialId: number; materialName: string; unit: string; hsnCode: string; currentPrice: number }[];
+  createdByName?: string;
 }
 
 export default function ProductViewPage() {
@@ -88,6 +89,12 @@ export default function ProductViewPage() {
               <p className="text-sm font-medium text-text-muted">Profit Margin</p>
               <p className="text-primary-500 font-semibold text-lg">{Number(product.profitMargin).toFixed(1)}%</p>
             </div>
+            {product.createdByName && (
+              <div>
+                <p className="text-sm font-medium text-text-muted">Created By</p>
+                <p className="text-text-primary">{product.createdByName}</p>
+              </div>
+            )}
           </div>
 
           {product.materials?.length > 0 && (

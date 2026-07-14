@@ -1,11 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { StatCard } from '@/components/widgets/stat-card';
 import { InvoicesTable } from '@/components/widgets/invoices-table';
+import { RevenueChart } from '@/components/widgets/revenue-chart';
+import { TopProductsTable } from '@/components/widgets/top-products-table';
+import { TopCustomersTable } from '@/components/widgets/top-customers-table';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
+import { ErrorState } from '@/components/ui/error-state';
+import { StatCardSkeleton } from '@/components/ui/skeleton';
+import { DashboardPeriod, DashboardResponse, DASHBOARD_PERIOD_LABELS } from '@/types/dashboard';
 
 interface ApiInvoice {
   id: number;
@@ -77,12 +85,37 @@ const WORKFLOW_STEPS = [
   },
 ];
 
+const PERIOD_OPTIONS = (Object.keys(DASHBOARD_PERIOD_LABELS) as DashboardPeriod[]).map(value => ({
+  value,
+  label: DASHBOARD_PERIOD_LABELS[value],
+}));
+
 export default function DashboardPage() {
   const router = useRouter();
   const [invoices, setInvoices] = useState<ApiInvoice[]>([]);
   const [counts, setCounts] = useState({ materials: 0, products: 0, customers: 0, invoices: 0 });
+  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
+  const [dashboardError, setDashboardError] = useState('');
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [period, setPeriod] = useState<DashboardPeriod>('LAST_MONTH');
+
+  const fetchDashboard = () => {
+    fetch('/api/dashboard')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then((data: DashboardResponse) => setDashboard(data))
+      .catch(() => setDashboardError('Could not load dashboard metrics.'))
+      .finally(() => setDashboardLoading(false));
+  };
+
+  const retryDashboard = () => {
+    setDashboardError('');
+    setDashboardLoading(true);
+    fetchDashboard();
+  };
 
   useEffect(() => {
+    fetchDashboard();
+
     fetch('/api/invoices')
       .then(r => r.ok ? r.json() : { invoices: [] })
       .then(data => {
@@ -108,12 +141,6 @@ export default function DashboardPage() {
 
   const stepCounts = [counts.materials, counts.products, counts.customers, counts.invoices];
 
-  const totalRevenue = invoices.reduce((s, inv) => s + Number(inv.grandTotal), 0);
-  const paidCount = invoices.filter(i => i.status === 'PAID').length;
-  const outstanding = invoices
-    .filter(i => i.status !== 'PAID' && i.status !== 'CANCELLED')
-    .reduce((s, i) => s + Number(i.grandTotal), 0);
-
   const tableInvoices = invoices.map(inv => ({
     id: String(inv.id),
     number: inv.invoiceNumber,
@@ -125,6 +152,21 @@ export default function DashboardPage() {
 
   // Find the first incomplete step to highlight
   const activeStep = stepCounts.findIndex(c => c === 0);
+
+  const selectedPeriod = dashboard?.periods.find(p => p.period === period) ?? null;
+
+  const chartData = useMemo(() => {
+    if (!selectedPeriod) return { labels: [], datasets: [] };
+    return {
+      labels: selectedPeriod.monthlyRevenue.map(m => m.month),
+      datasets: [{
+        label: 'Revenue',
+        data: selectedPeriod.monthlyRevenue.map(m => m.revenue),
+        borderColor: 'rgb(255, 176, 38)',
+        backgroundColor: 'rgba(255, 176, 38, 0.1)',
+      }],
+    };
+  }, [selectedPeriod]);
 
   return (
     <div className="space-y-8">
@@ -194,13 +236,65 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Invoices" value={String(counts.invoices)} color="primary" />
-        <StatCard title="Total Revenue" value={`₹${totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`} color="success" />
-        <StatCard title="Outstanding" value={`₹${outstanding.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`} color="warning" />
-        <StatCard title="Paid" value={String(paidCount)} color="info" />
+      {/* Metrics header + period selector */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-text-primary">Business Metrics</h2>
+          <p className="text-xs text-text-muted mt-0.5">Revenue, invoices, and top performers</p>
+        </div>
+        <div className="w-48">
+          <Select
+            value={period}
+            onChange={e => setPeriod(e.target.value as DashboardPeriod)}
+            options={PERIOD_OPTIONS}
+          />
+        </div>
       </div>
+
+      {dashboardLoading ? (
+        <StatCardSkeleton />
+      ) : dashboardError ? (
+        <ErrorState message={dashboardError} onRetry={retryDashboard} />
+      ) : selectedPeriod ? (
+        <>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total Invoices" value={String(selectedPeriod.totalInvoices)} color="primary" />
+            <StatCard
+              title="Revenue"
+              value={`₹${selectedPeriod.revenue.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`}
+              color="success"
+              trend={{
+                value: `${selectedPeriod.growthPercentage >= 0 ? '+' : ''}${selectedPeriod.growthPercentage.toFixed(1)}%`,
+                isPositive: selectedPeriod.growthPercentage >= 0,
+              }}
+            />
+            <StatCard
+              title="Outstanding"
+              value={`₹${selectedPeriod.outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`}
+              color="warning"
+            />
+            <StatCard
+              title="Collected"
+              value={`₹${selectedPeriod.collectedAmount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`}
+              color="info"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 bg-surface-1 rounded-xl border border-surface-2 p-6">
+              <h3 className="text-base font-semibold text-text-primary mb-4">Monthly Revenue</h3>
+              <RevenueChart data={chartData} />
+            </div>
+            <Card header={<h3 className="text-base font-semibold text-text-primary">Top Customers</h3>}>
+              <TopCustomersTable customers={selectedPeriod.topCustomers} />
+            </Card>
+          </div>
+
+          <Card header={<h3 className="text-base font-semibold text-text-primary">Top Products</h3>}>
+            <TopProductsTable products={selectedPeriod.topProducts} />
+          </Card>
+        </>
+      ) : null}
 
       {/* Recent Invoices */}
       {tableInvoices.length > 0 && (
