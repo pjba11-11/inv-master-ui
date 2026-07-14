@@ -127,6 +127,17 @@ html, body {
 /* Selection */
 ::selection { background: rgba(230,155,29,0.2); color: var(--text-primary); }
 
+/* Number input spinner — hide native chrome, clashes with dark theme */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 /* Shimmer animation for skeleton loading */
 @keyframes shimmer {
   0%   { background-position: -400px 0; }
