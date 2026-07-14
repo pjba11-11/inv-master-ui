@@ -15,6 +15,7 @@ interface Customer {
   phone: string;
   gstNumber: string;
   address: string;
+  createdByName?: string;
 }
 
 export default function CustomerViewPage() {
@@ -81,6 +82,12 @@ export default function CustomerViewPage() {
               <p className="text-sm font-medium text-text-muted">Address</p>
               <p className="text-text-primary whitespace-pre-line">{customer.address || '—'}</p>
             </div>
+            {customer.createdByName && (
+              <div>
+                <p className="text-sm font-medium text-text-muted">Created By</p>
+                <p className="text-text-primary">{customer.createdByName}</p>
+              </div>
+            )}
           </div>
         </div>
       </Card>

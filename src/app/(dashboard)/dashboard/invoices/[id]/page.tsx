@@ -24,6 +24,7 @@ interface Invoice {
   status: InvoiceStatus;
   remarks: string;
   createdAt: string;
+  createdByName?: string;
 }
 
 interface LineItem {
@@ -213,6 +214,12 @@ export default function InvoiceDetailPage() {
             <div className="md:col-span-2">
               <p className="text-sm text-text-muted">Remarks</p>
               <p className="text-text-primary">{invoice.remarks}</p>
+            </div>
+          )}
+          {invoice.createdByName && (
+            <div>
+              <p className="text-sm text-text-muted">Created By</p>
+              <p className="font-medium text-text-primary">{invoice.createdByName}</p>
             </div>
           )}
         </div>
