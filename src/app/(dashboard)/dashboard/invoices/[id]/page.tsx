@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { StatCard } from '@/components/widgets/stat-card';
 import { StatCardSkeleton, DetailSkeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
+import { useToast } from '@/components/ui/toast';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -62,6 +63,7 @@ export default function InvoiceDetailPage() {
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const { showToast } = useToast();
 
   const load = () => {
     setError(''); setLoading(true);
@@ -85,7 +87,12 @@ export default function InvoiceDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'PAID' }),
     });
-    if (res.ok) setInvoice(prev => prev ? { ...prev, status: 'PAID' } : prev);
+    if (res.ok) {
+      setInvoice(prev => prev ? { ...prev, status: 'PAID' } : prev);
+      showToast('Invoice marked as paid.', 'success');
+    } else {
+      showToast('Could not mark invoice as paid.', 'error');
+    }
   };
 
   const cancelInvoice = async () => {
@@ -95,7 +102,12 @@ export default function InvoiceDetailPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'CANCELLED' }),
     });
-    if (res.ok) setInvoice(prev => prev ? { ...prev, status: 'CANCELLED' } : prev);
+    if (res.ok) {
+      setInvoice(prev => prev ? { ...prev, status: 'CANCELLED' } : prev);
+      showToast('Invoice cancelled.', 'success');
+    } else {
+      showToast('Could not cancel invoice.', 'error');
+    }
     setCancelConfirm(false);
     setCancelling(false);
   };
@@ -114,6 +126,8 @@ export default function InvoiceDetailPage() {
         a.click();
         document.body.removeChild(a);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        showToast('Could not download PDF.', 'error');
       }
     } finally {
       setDownloading(false);

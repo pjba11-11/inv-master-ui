@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ErrorState } from '@/components/ui/error-state';
 import { DetailSkeleton, TableSkeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/toast';
 import { DashboardAIResponse } from '@/types/dashboard';
 
 function riskBadgeVariant(level: string): 'success' | 'warning' | 'error' | 'default' {
@@ -22,6 +23,7 @@ export default function AIInsightsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [requested, setRequested] = useState(false);
+  const { showToast } = useToast();
 
   const generate = () => {
     setRequested(true);
@@ -29,8 +31,14 @@ export default function AIInsightsPage() {
     setError('');
     fetch('/api/dashboard/ai')
       .then(r => r.ok ? r.json() : Promise.reject())
-      .then((data: DashboardAIResponse) => setInsights(data))
-      .catch(() => setError('Could not generate AI insights. Try again.'))
+      .then((data: DashboardAIResponse) => {
+        setInsights(data);
+        showToast('AI insights generated.', 'success');
+      })
+      .catch(() => {
+        setError('Could not generate AI insights. Try again.');
+        showToast('Could not generate AI insights.', 'error');
+      })
       .finally(() => setLoading(false));
   };
 
