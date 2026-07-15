@@ -77,6 +77,9 @@ export default function ProductsPage() {
         ]}
       >
         <div className="flex flex-wrap items-center gap-4">
+          <Link href="/dashboard/materials">
+            <Button variant="outline">Back to Materials</Button>
+          </Link>
           {canWrite && (
             <Link href="/dashboard/products/add">
               <Button variant="primary">Add Product</Button>
@@ -158,18 +161,6 @@ export default function ProductsPage() {
           )}
         </div>
       </Card>
-
-      {products.length > 0 && (
-        <div className="flex items-center justify-between rounded-xl border border-primary-500/30 bg-primary-500/5 px-5 py-4">
-          <div>
-            <p className="text-sm font-medium text-text-primary">Ready to add customers?</p>
-            <p className="text-xs text-text-muted mt-0.5">You have {products.length} product{products.length !== 1 ? 's' : ''} — next step is adding the customers you bill.</p>
-          </div>
-          <Link href="/dashboard/customers/add">
-            <Button variant="primary" size="sm">Add Customer →</Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

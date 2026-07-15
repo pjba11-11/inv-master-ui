@@ -98,6 +98,9 @@ function InvoicesPageContent() {
         ]}
       >
         <div className="flex flex-wrap items-center gap-4">
+          <Link href="/dashboard/customers">
+            <Button variant="outline">Back to Customers</Button>
+          </Link>
           {canWrite && (
             <Link href="/dashboard/invoices/create">
               <Button variant="primary">New Invoice</Button>
