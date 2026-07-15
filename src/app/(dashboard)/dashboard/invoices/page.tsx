@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { StatCardSkeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
 import { EmptyState } from '@/components/ui/empty-state';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/hooks/use-role';
 
 type InvoiceStatus = 'GENERATED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
@@ -39,12 +39,15 @@ const statusBadge: Record<InvoiceStatus, string> = {
   CANCELLED: 'bg-error/20 text-error',
 };
 
-export default function InvoicesPage() {
+function InvoicesPageContent() {
   const { canWrite } = useRole();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('');
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>(
+    () => (searchParams.get('status') as InvoiceStatus | null) ?? ''
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -182,5 +185,19 @@ export default function InvoicesPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+export default function InvoicesPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <PageHeader title="Invoices" description="Manage and track all your invoices" />
+        <StatCardSkeleton />
+        <TableSkeleton rows={5} cols={5} />
+      </div>
+    }>
+      <InvoicesPageContent />
+    </Suspense>
   );
 }
