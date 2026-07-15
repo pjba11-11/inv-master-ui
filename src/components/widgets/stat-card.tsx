@@ -1,8 +1,11 @@
+import Link from 'next/link';
+
 interface StatCardProps {
   title: string;
   value: string | number;
   trend?: { value: string; isPositive: boolean };
   color?: 'primary' | 'success' | 'warning' | 'info';
+  href?: string;
 }
 
 const accentMap = {
@@ -19,12 +22,12 @@ const dotMap = {
   info: 'bg-info',
 };
 
-export const StatCard = ({ title, value, trend, color = 'primary' }: StatCardProps) => {
+export const StatCard = ({ title, value, trend, color = 'primary', href }: StatCardProps) => {
   const accent = accentMap[color];
 
-  return (
+  const card = (
     <div
-      className="relative overflow-hidden rounded-xl p-5 flex flex-col gap-3 transition-all duration-200 hover:translate-y-[-1px]"
+      className={`relative overflow-hidden rounded-xl p-5 flex flex-col gap-3 transition-all duration-200 hover:translate-y-[-1px] ${href ? 'cursor-pointer' : ''}`}
       style={{
         background: 'var(--surface-1)',
         border: `1px solid ${accent.ring}`,
@@ -47,4 +50,6 @@ export const StatCard = ({ title, value, trend, color = 'primary' }: StatCardPro
       </div>
     </div>
   );
+
+  return href ? <Link href={href} className="block">{card}</Link> : card;
 };
