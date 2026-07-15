@@ -151,18 +151,6 @@ export default function MaterialsPage() {
           )}
         </div>
       </Card>
-
-      {materials.length > 0 && (
-        <div className="flex items-center justify-between rounded-xl border border-primary-500/30 bg-primary-500/5 px-5 py-4">
-          <div>
-            <p className="text-sm font-medium text-text-primary">Ready to build products?</p>
-            <p className="text-xs text-text-muted mt-0.5">You have {materials.length} material{materials.length !== 1 ? 's' : ''} — next step is creating products that bundle them.</p>
-          </div>
-          <Link href="/dashboard/products/add">
-            <Button variant="primary" size="sm">Add Product →</Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }

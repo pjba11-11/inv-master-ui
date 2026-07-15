@@ -77,6 +77,9 @@ export default function CustomersPage() {
         ]}
       >
         <div className="flex flex-wrap items-center gap-4">
+          <Link href="/dashboard/products">
+            <Button variant="outline">Back to Products</Button>
+          </Link>
           {canWrite && (
             <Link href="/dashboard/customers/add">
               <Button variant="primary">Add Customer</Button>
@@ -150,18 +153,6 @@ export default function CustomersPage() {
           )}
         </div>
       </Card>
-
-      {customers.length > 0 && (
-        <div className="flex items-center justify-between rounded-xl border border-primary-500/30 bg-primary-500/5 px-5 py-4">
-          <div>
-            <p className="text-sm font-medium text-text-primary">Ready to create an invoice?</p>
-            <p className="text-xs text-text-muted mt-0.5">You have {customers.length} customer{customers.length !== 1 ? 's' : ''} — you can now create your first invoice.</p>
-          </div>
-          <Link href="/dashboard/invoices/create">
-            <Button variant="primary" size="sm">Create Invoice →</Button>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
