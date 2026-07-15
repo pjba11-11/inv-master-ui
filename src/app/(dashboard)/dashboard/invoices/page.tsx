@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { StatCard } from '@/components/widgets/stat-card';
 import { StatCardSkeleton, TableSkeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/ui/error-state';
@@ -41,6 +43,8 @@ export default function InvoicesPage() {
   const { canWrite } = useRole();
   const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | ''>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -53,6 +57,12 @@ export default function InvoicesPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const filtered = invoices.filter(inv =>
+    (inv.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (inv.customerName || '').toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (statusFilter === '' || inv.status === statusFilter)
+  );
 
   const stats = [
     { title: 'Total', value: invoices.length },
@@ -84,11 +94,33 @@ export default function InvoicesPage() {
           { label: 'Invoices', href: '/dashboard/invoices' },
         ]}
       >
-        {canWrite && (
-          <Link href="/dashboard/invoices/create">
-            <Button variant="primary">New Invoice</Button>
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-4">
+          {canWrite && (
+            <Link href="/dashboard/invoices/create">
+              <Button variant="primary">New Invoice</Button>
+            </Link>
+          )}
+          <Input
+            type="search"
+            placeholder="Search invoices..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-48"
+          />
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as InvoiceStatus | '')}
+            options={[
+              { value: '', label: 'All' },
+              { value: 'GENERATED', label: 'Generated' },
+              { value: 'PARTIALLY_PAID', label: 'Partially Paid' },
+              { value: 'PAID', label: 'Paid' },
+              { value: 'CANCELLED', label: 'Cancelled' },
+            ]}
+            placeholder=""
+            className="w-40"
+          />
+        </div>
       </PageHeader>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -102,7 +134,7 @@ export default function InvoicesPage() {
           <div className="border-b border-surface-2 pb-4">
             <h2 className="text-lg font-medium text-text-primary">Invoice List</h2>
           </div>
-          {invoices.length > 0 ? (
+          {filtered.length > 0 ? (
             <table className="w-full border-spacing-0">
               <thead>
                 <tr className="bg-surface-2">
@@ -116,7 +148,7 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-2">
-                {invoices.map(inv => (
+                {filtered.map(inv => (
                   <tr key={inv.id} className="hover:bg-surface-1">
                     <td className="px-4 py-4 text-text-primary font-medium">{inv.invoiceNumber}</td>
                     <td className="px-4 py-4 text-text-muted text-sm">{inv.customerName ?? '—'}</td>
@@ -141,7 +173,11 @@ export default function InvoicesPage() {
               </tbody>
             </table>
           ) : (
-            <EmptyState title="No invoices yet" description="Create your first invoice to get started." action={<Link href="/dashboard/invoices/create"><Button variant="primary" size="sm">New Invoice</Button></Link>} />
+            <EmptyState
+              title={searchTerm ? 'No results match your search' : 'No invoices yet'}
+              description={searchTerm ? 'Try a different search term.' : 'Create your first invoice to get started.'}
+              action={!searchTerm ? <Link href="/dashboard/invoices/create"><Button variant="primary" size="sm">New Invoice</Button></Link> : undefined}
+            />
           )}
         </div>
       </Card>
