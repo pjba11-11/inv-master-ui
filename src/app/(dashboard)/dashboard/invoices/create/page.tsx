@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { PageHeader } from '@/components/layout/page-header';
 import { WriteGuard } from '@/components/guards/write-guard';
+import { calculateInvoiceTotals } from '@/lib/invoice-calc';
 
 interface Customer { id: number; customerName: string; phone?: string; gstNumber?: string; }
 interface Product { productId: number; productName: string; sellingPrice: number; hsnCode?: string; }
@@ -46,10 +47,7 @@ export default function CreateInvoicePage() {
     }));
   };
 
-  const subtotal = items.reduce((s, item) => s + item.quantity * item.unitPrice, 0);
-  const cgst = subtotal * 0.09;
-  const sgst = subtotal * 0.09;
-  const grandTotal = subtotal + cgst + sgst - discount;
+  const { subtotal, cgst, sgst, grandTotal } = calculateInvoiceTotals(items, discount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
