@@ -152,6 +152,7 @@ export default function DashboardPage() {
 
   // Find the first incomplete step to highlight
   const activeStep = stepCounts.findIndex(c => c === 0);
+  const allStepsDone = stepCounts.every(c => c > 0);
 
   const selectedPeriod = dashboard?.periods.find(p => p.period === period) ?? null;
 
@@ -170,7 +171,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Workflow stepper */}
+      {/* Workflow stepper — only shown until first-time setup is complete */}
+      {!allStepsDone && (
       <div className="bg-surface-1 border border-surface-2 rounded-xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div>
@@ -235,6 +237,7 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
+      )}
 
       {/* Metrics header + period selector */}
       <div className="flex items-center justify-between">
@@ -258,7 +261,7 @@ export default function DashboardPage() {
       ) : selectedPeriod ? (
         <>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total Invoices" value={String(selectedPeriod.totalInvoices)} color="primary" />
+            <StatCard title="Total Invoices" value={String(selectedPeriod.totalInvoices)} color="primary" href="/dashboard/invoices" />
             <StatCard
               title="Revenue"
               value={`₹${selectedPeriod.revenue.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`}
@@ -267,16 +270,19 @@ export default function DashboardPage() {
                 value: `${selectedPeriod.growthPercentage >= 0 ? '+' : ''}${selectedPeriod.growthPercentage.toFixed(1)}%`,
                 isPositive: selectedPeriod.growthPercentage >= 0,
               }}
+              href="/dashboard/invoices"
             />
             <StatCard
               title="Outstanding"
               value={`₹${selectedPeriod.outstandingAmount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`}
               color="warning"
+              href="/dashboard/invoices?status=GENERATED"
             />
             <StatCard
               title="Collected"
               value={`₹${selectedPeriod.collectedAmount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}`}
               color="info"
+              href="/dashboard/invoices?status=PAID"
             />
           </div>
 

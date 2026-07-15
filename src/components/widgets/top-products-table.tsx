@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { TopProductResponse } from '@/types/dashboard';
 
 interface TopProductsTableProps {
@@ -12,7 +13,11 @@ export const TopProductsTable = ({ products }: TopProductsTableProps) => {
   return (
     <div className="divide-y divide-surface-2">
       {products.map((p, i) => (
-        <div key={p.productId} className="flex items-center justify-between py-3">
+        <Link
+          key={p.productId}
+          href={`/dashboard/products/${p.productId}`}
+          className="flex items-center justify-between py-3 -mx-2 px-2 rounded-lg transition-colors hover:bg-surface-2"
+        >
           <div className="flex items-center gap-3 min-w-0">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-2 text-xs font-semibold text-text-muted">
               {i + 1}
@@ -25,7 +30,7 @@ export const TopProductsTable = ({ products }: TopProductsTableProps) => {
           <p className="text-sm font-semibold text-text-primary shrink-0">
             ₹{p.revenue.toLocaleString('en-IN', { minimumFractionDigits: 0 })}
           </p>
-        </div>
+        </Link>
       ))}
     </div>
   );
