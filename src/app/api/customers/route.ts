@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/backend';
 
+interface CustomerRecord {
+  customerName?: string;
+  email?: string;
+  phone?: string;
+  [key: string]: unknown;
+}
+
 export async function GET(request: NextRequest) {
   const resHeaders = new Headers();
   const res = await backendFetch('/customers', {}, request, { headers: resHeaders });
@@ -9,9 +16,9 @@ export async function GET(request: NextRequest) {
   if (!res.ok) return NextResponse.json(data, { status: res.status, headers: resHeaders });
 
   const search = request.nextUrl.searchParams.get('search')?.toLowerCase();
-  let result: any[] = data;
+  let result: CustomerRecord[] = data;
   if (search) {
-    result = result.filter((c: any) =>
+    result = result.filter((c) =>
       c.customerName?.toLowerCase().includes(search) ||
       c.email?.toLowerCase().includes(search) ||
       c.phone?.includes(search)
