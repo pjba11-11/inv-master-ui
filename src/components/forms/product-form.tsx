@@ -13,7 +13,7 @@ interface CatalogMaterial {
   currentPrice: number;
 }
 
-interface ProductFormValues {
+export interface ProductFormValues {
   productName: string;
   description: string;
   hsnCode: string;
@@ -22,13 +22,17 @@ interface ProductFormValues {
   active: boolean;
 }
 
+export interface ProductFormPayload extends ProductFormValues {
+  materialIds: number[];
+}
+
 export const ProductForm = ({
   onSubmit,
   initialData,
   initialMaterialIds = [],
   isEditMode = false,
 }: {
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: ProductFormPayload) => Promise<void> | void;
   initialData?: Partial<ProductFormValues>;
   initialMaterialIds?: number[];
   isEditMode?: boolean;
@@ -67,12 +71,13 @@ export const ProductForm = ({
   useEffect(() => {
     fetch('/api/materials')
       .then(r => r.ok ? r.json() : [])
-      .then((data: any[]) => setCatalog(Array.isArray(data) ? data.filter(m => m.active !== false) : []))
+      .then((data: (CatalogMaterial & { active?: boolean })[]) =>
+        setCatalog(Array.isArray(data) ? data.filter(m => m.active !== false) : []))
       .catch(() => {});
     if (!isEditMode) {
       fetch('/api/settings')
         .then(r => r.ok ? r.json() : null)
-        .then((s: any) => {
+        .then((s: { defaultProfitMargin?: number } | null) => {
           if (s?.defaultProfitMargin != null) {
             handleChange('profitMargin', Number(s.defaultProfitMargin));
           }

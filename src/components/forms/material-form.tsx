@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 // Fields match MaterialDTO — no description or supplier in the backend schema.
-interface MaterialFormValues {
+export interface MaterialFormValues {
   materialName: string;
   unit: string;
   currentPrice: number;
@@ -15,7 +15,7 @@ export const MaterialForm = ({
   initialData,
   isEditMode = false,
 }: {
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: MaterialFormValues) => Promise<void> | void;
   initialData?: Partial<MaterialFormValues>;
   isEditMode?: boolean;
 }) => {

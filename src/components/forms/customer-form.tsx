@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 
-interface CustomerFormValues {
+export interface CustomerFormValues {
   customerName: string;
   email: string;
   phone: string;
@@ -16,7 +16,7 @@ export const CustomerForm = ({
   initialData,
   isEditMode = false,
 }: {
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: CustomerFormValues) => Promise<void> | void;
   initialData?: Partial<CustomerFormValues>;
   isEditMode?: boolean;
 }) => {
