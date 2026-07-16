@@ -12,7 +12,7 @@ import { WriteGuard } from '@/components/guards/write-guard';
 import { calculateInvoiceTotals } from '@/lib/invoice-calc';
 
 interface Customer { id: number; customerName: string; phone?: string; gstNumber?: string; }
-interface Product { productId: number; productName: string; sellingPrice: number; hsnCode?: string; }
+interface Product { productId: number; productName: string; sellingPrice: number; hsnCode?: string; active?: boolean; }
 interface LineItem { productId: number; quantity: number; unitPrice: number; }
 
 export default function CreateInvoicePage() {
@@ -30,7 +30,7 @@ export default function CreateInvoicePage() {
 
   useEffect(() => {
     fetch('/api/customers').then(r => r.json()).then(data => setCustomers(Array.isArray(data) ? data : [])).catch(() => {});
-    fetch('/api/products').then(r => r.json()).then(data => setProducts(Array.isArray(data) ? data.filter((p: any) => p.active !== false) : [])).catch(() => {});
+    fetch('/api/products').then(r => r.json()).then(data => setProducts(Array.isArray(data) ? data.filter((p: Product) => p.active !== false) : [])).catch(() => {});
   }, []);
 
   const addItem = () => setItems(prev => [...prev, { productId: 0, quantity: 1, unitPrice: 0 }]);

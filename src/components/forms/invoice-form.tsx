@@ -5,10 +5,10 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 
 // Status matches backend InvoiceStatus enum.
-type InvoiceStatus = 'GENERATED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
+export type InvoiceStatus = 'GENERATED' | 'PARTIALLY_PAID' | 'PAID' | 'CANCELLED';
 
 // Line items reference products (productId FK), not free-text descriptions.
-interface LineItem {
+export interface LineItem {
   id: string;
   productId: number;
   productName: string;
@@ -17,7 +17,7 @@ interface LineItem {
   total: number;
 }
 
-interface InvoiceFormValues {
+export interface InvoiceFormValues {
   customerId: string;
   invoiceDate: string;
   gst: number;
@@ -26,8 +26,14 @@ interface InvoiceFormValues {
   status: InvoiceStatus;
 }
 
+export interface InvoiceFormPayload extends InvoiceFormValues {
+  subtotal: number;
+  grandTotal: number;
+  lineItems: LineItem[];
+}
+
 interface InvoiceFormProps {
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: InvoiceFormPayload) => Promise<void> | void;
   initialData?: Partial<InvoiceFormValues>;
   lineItems: LineItem[];
   onAddLineItem: (item: Omit<LineItem, 'id' | 'total'>) => void;

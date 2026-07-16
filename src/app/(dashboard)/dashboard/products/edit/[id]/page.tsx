@@ -4,14 +4,33 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { FormSkeleton } from '@/components/ui/skeleton';
-import { ProductForm } from '@/components/forms/product-form';
+import { ProductForm, ProductFormPayload } from '@/components/forms/product-form';
 import { useParams, useRouter } from 'next/navigation';
 import { WriteGuard } from '@/components/guards/write-guard';
+
+interface ProductMaterial {
+  materialId: number;
+  materialName: string;
+  unit: string;
+  hsnCode: string;
+  currentPrice: number;
+}
+
+interface Product {
+  productId: number;
+  productName: string;
+  description?: string;
+  hsnCode?: string;
+  labourCharges?: number;
+  profitMargin?: number;
+  active: boolean;
+  materials?: ProductMaterial[];
+}
 
 export default function EditProductPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +40,7 @@ export default function EditProductPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ProductFormPayload) => {
     const res = await fetch(`/api/products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -59,7 +78,7 @@ export default function EditProductPage() {
           profitMargin: product.profitMargin ?? 0,
           active: product.active,
         }}
-        initialMaterialIds={(product.materials ?? []).map((m: any) => m.materialId)}
+        initialMaterialIds={(product.materials ?? []).map((m) => m.materialId)}
         isEditMode={true}
       />
     </div>

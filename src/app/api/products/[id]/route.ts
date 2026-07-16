@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/backend';
 
+interface ProductRecord {
+  productId?: number | string;
+  [key: string]: unknown;
+}
+
 // Backend has no GET /products/{id}, so fetch all and filter by productId
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -9,8 +14,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const res = await backendFetch('/products', {}, request, { headers: resHeaders });
   if (!res.ok) return NextResponse.json({ error: 'Failed to fetch product' }, { status: res.status, headers: resHeaders });
 
-  const products: any[] = await res.json();
-  const product = products.find((p: any) => String(p.productId) === id);
+  const products: ProductRecord[] = await res.json();
+  const product = products.find((p) => String(p.productId) === id);
 
   if (!product) return NextResponse.json({ error: 'Product not found' }, { status: 404 });
   return NextResponse.json(product, { headers: resHeaders });

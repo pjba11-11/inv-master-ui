@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 // Matches RegisterCompanyRequest / CompanyDTO from the backend.
 // Settings (gstPercentage, invoicePrefix, currency, financialYear) live in the Settings entity — not here.
-interface CompanyFormValues {
+export interface CompanyFormValues {
   companyName: string;
   gstNumber: string;
   email: string;
@@ -22,7 +22,7 @@ export const CompanyForm = ({
   onSubmit,
   initialData,
 }: {
-  onSubmit: (data: any) => Promise<void> | void;
+  onSubmit: (data: CompanyFormValues) => Promise<void> | void;
   initialData?: Partial<CompanyFormValues>;
 }) => {
   const defaultValues: CompanyFormValues = {

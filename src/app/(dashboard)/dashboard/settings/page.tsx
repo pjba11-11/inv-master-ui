@@ -102,7 +102,7 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
-  const change = (field: keyof Settings, value: any) =>
+  const change = (field: keyof Settings, value: Settings[keyof Settings]) =>
     setSettings(prev => ({ ...prev, [field]: value }));
 
   const handleAddUser = async (e: React.FormEvent) => {

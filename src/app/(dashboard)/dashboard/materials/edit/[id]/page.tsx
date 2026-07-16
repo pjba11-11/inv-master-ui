@@ -4,14 +4,18 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { FormSkeleton } from '@/components/ui/skeleton';
-import { MaterialForm } from '@/components/forms/material-form';
+import { MaterialForm, MaterialFormValues } from '@/components/forms/material-form';
 import { useParams, useRouter } from 'next/navigation';
 import { WriteGuard } from '@/components/guards/write-guard';
+
+interface Material extends MaterialFormValues {
+  id: number;
+}
 
 export default function EditMaterialPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [material, setMaterial] = useState<any>(null);
+  const [material, setMaterial] = useState<Material | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +25,7 @@ export default function EditMaterialPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: MaterialFormValues) => {
     const res = await fetch(`/api/materials/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
