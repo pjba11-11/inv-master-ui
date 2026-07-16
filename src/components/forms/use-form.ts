@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
 
-interface FormValues {
-  [key: string]: any;
-}
+type FormValues = object;
 
 export interface FormErrors {
   [key: string]: string;
@@ -14,7 +12,7 @@ interface FormOptions<T extends FormValues> {
   onSubmit?: (values: T) => Promise<void> | void;
 }
 
-export const useForm = <T extends FormValues>({ 
+export const useForm = <T extends FormValues>({
   initialValues, 
   validate,
   onSubmit 
@@ -24,7 +22,7 @@ export const useForm = <T extends FormValues>({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleChange = useCallback((field: keyof T, value: any) => {
+  const handleChange = useCallback((field: keyof T, value: T[keyof T]) => {
     setValues(prev => ({
       ...prev,
       [field]: value
@@ -51,7 +49,7 @@ export const useForm = <T extends FormValues>({
     }
   }, [validate, values]);
 
-  const setFieldValue = useCallback((field: keyof T, value: any) => {
+  const setFieldValue = useCallback((field: keyof T, value: T[keyof T]) => {
     handleChange(field, value);
   }, [handleChange]);
 
