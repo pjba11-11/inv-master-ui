@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
-import { ProductForm } from '@/components/forms/product-form';
+import { ProductForm, ProductFormPayload } from '@/components/forms/product-form';
 import { useRouter } from 'next/navigation';
 import { WriteGuard } from '@/components/guards/write-guard';
 
@@ -11,7 +11,7 @@ export default function AddProductPage() {
   const router = useRouter();
   const [error, setError] = useState('');
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: ProductFormPayload) => {
     setError('');
     const res = await fetch('/api/products', {
       method: 'POST',

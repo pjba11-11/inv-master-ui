@@ -2,14 +2,14 @@
 
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
-import { CustomerForm } from '@/components/forms/customer-form';
+import { CustomerForm, CustomerFormValues } from '@/components/forms/customer-form';
 import { useRouter } from 'next/navigation';
 import { WriteGuard } from '@/components/guards/write-guard';
 
 export default function AddCustomerPage() {
   const router = useRouter();
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: CustomerFormValues) => {
     const res = await fetch('/api/customers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

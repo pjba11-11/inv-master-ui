@@ -4,14 +4,18 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/layout/page-header';
 import { FormSkeleton } from '@/components/ui/skeleton';
-import { CustomerForm } from '@/components/forms/customer-form';
+import { CustomerForm, CustomerFormValues } from '@/components/forms/customer-form';
 import { useParams, useRouter } from 'next/navigation';
 import { WriteGuard } from '@/components/guards/write-guard';
+
+interface Customer extends CustomerFormValues {
+  id: number;
+}
 
 export default function EditCustomerPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [customer, setCustomer] = useState<any>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,7 +25,7 @@ export default function EditCustomerPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: CustomerFormValues) => {
     const res = await fetch(`/api/customers/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
