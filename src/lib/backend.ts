@@ -81,14 +81,15 @@ export async function backendFetch(
 
       // Propagate the rotated tokens as cookies via outResponse headers
       if (outResponse) {
+        const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
         outResponse.headers.append(
           'Set-Cookie',
-          `auth_token=${refreshed.accessToken}; HttpOnly; Path=/; Max-Age=${60 * 60 * 8}; SameSite=Lax`,
+          `auth_token=${refreshed.accessToken}; HttpOnly${secure}; Path=/; Max-Age=${60 * 60 * 8}; SameSite=Lax`,
         );
         if (refreshed.refreshToken) {
           outResponse.headers.append(
             'Set-Cookie',
-            `refresh_token=${refreshed.refreshToken}; HttpOnly; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`,
+            `refresh_token=${refreshed.refreshToken}; HttpOnly${secure}; Path=/; Max-Age=${60 * 60 * 24 * 7}; SameSite=Lax`,
           );
         }
       }
