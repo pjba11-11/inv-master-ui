@@ -128,28 +128,6 @@ function LoginForm() {
             </Link>
           </p>
         </div>
-
-        <div
-          className="rounded-xl p-4 space-y-2"
-          style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)' }}
-        >
-          <p className="text-xs font-semibold uppercase tracking-wider text-text-muted">Demo credentials</p>
-          {[
-            { role: 'Admin', email: 'admin@example.com', pass: 'admin123' },
-            { role: 'Manager', email: 'manager@example.com', pass: 'manager123' },
-            { role: 'Employee', email: 'employee@example.com', pass: 'employee123' },
-          ].map(c => (
-            <button
-              key={c.role}
-              type="button"
-              onClick={() => { setEmail(c.email); setPassword(c.pass); setError(''); }}
-              className="w-full flex items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-surface-3 transition-colors"
-            >
-              <span className="text-xs font-medium text-text-secondary">{c.role}</span>
-              <span className="text-xs text-text-muted">{c.email}</span>
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   );
