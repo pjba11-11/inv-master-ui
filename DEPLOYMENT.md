@@ -43,11 +43,7 @@ Required environment variables (set in Render dashboard, Environment tab):
 
 - Project: `pjba/inv-master-ui`
 - Dashboard: https://vercel.com/pjba/inv-master-ui
-- **Git integration is not connected** (Vercel's GitHub App lacks access to the `pjba11-11` org — fix via https://github.com/organizations/pjba11-11/settings/installations, grant access to `inv-master-ui`/`inv-master-001`, then reconnect in Vercel project settings → Git)
-- Until Git is connected, deploys are manual from a local clone:
-  ```bash
-  vercel --prod
-  ```
+- Git integration **connected** to `pjba11-11/inv-master-ui`, branch `main` — auto-deploys on push (verified with commit `a42c055`)
 
 Required environment variable (Project Settings → Environment Variables):
 
@@ -58,7 +54,7 @@ Required environment variable (Project Settings → Environment Variables):
 ## Redeploying after a change
 
 - **Backend**: push to `main` on `pjba11-11/inv-master-001` — Render auto-deploys.
-- **Frontend**: until Git integration is fixed, run `vercel --prod` from `inv-master-ui` locally.
+- **Frontend**: push to `main` on `pjba11-11/inv-master-ui` — Vercel auto-deploys.
 
 ## Local development
 
