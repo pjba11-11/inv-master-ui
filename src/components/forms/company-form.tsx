@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm } from './use-form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,6 +50,19 @@ export const CompanyForm = ({
   const { values, errors, handleChange, handleBlur, handleSubmit, isSubmitting } =
     useForm<CompanyFormValues>({ initialValues: defaultValues, validate, onSubmit });
 
+  const [logoError, setLogoError] = useState('');
+
+  const handleLogoFile = (file: File | undefined) => {
+    setLogoError('');
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setLogoError('Please choose an image file.'); return; }
+    if (file.size > 500 * 1024) { setLogoError('Image must be under 500 KB.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => handleChange('logoUrl', String(reader.result));
+    reader.onerror = () => setLogoError('Could not read that file.');
+    reader.readAsDataURL(file);
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -94,13 +108,43 @@ export const CompanyForm = ({
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-text-muted mb-1">Logo URL</label>
-          <Input
-            value={values.logoUrl}
-            onChange={(e) => handleChange('logoUrl', e.target.value)}
-            placeholder="https://..."
-          />
+        <div className="md:col-span-2 lg:col-span-3">
+          <label className="block text-sm font-medium text-text-muted mb-1">Company Logo</label>
+          <div className="flex items-start gap-4">
+            {values.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={values.logoUrl}
+                alt="Company logo preview"
+                className="h-16 w-16 rounded-lg object-contain"
+                style={{ background: 'var(--surface-2)', padding: '6px' }}
+              />
+            )}
+            <div className="flex-1 space-y-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleLogoFile(e.target.files?.[0])}
+                className="block w-full text-sm text-text-muted file:mr-3 file:rounded-lg file:border-0 file:bg-surface-3 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-text-primary hover:file:bg-surface-4"
+              />
+              <Input
+                value={values.logoUrl}
+                onChange={(e) => handleChange('logoUrl', e.target.value)}
+                placeholder="…or paste an image URL"
+              />
+              {values.logoUrl && (
+                <button
+                  type="button"
+                  onClick={() => handleChange('logoUrl', '')}
+                  className="text-xs text-text-muted hover:text-error"
+                >
+                  Remove logo
+                </button>
+              )}
+              {logoError && <p className="text-sm text-error">{logoError}</p>}
+              <p className="text-xs text-text-muted">PNG or JPG, under 500 KB. Shown on invoices.</p>
+            </div>
+          </div>
         </div>
       </div>
 

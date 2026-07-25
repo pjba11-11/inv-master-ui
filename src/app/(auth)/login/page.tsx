@@ -11,6 +11,7 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [slowHint, setSlowHint] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -18,6 +19,11 @@ function LoginForm() {
     e.preventDefault();
     setError('');
     setLoading(true);
+    setSlowHint(false);
+
+    // The backend runs on a free tier that sleeps when idle; the first request
+    // can take 60s+ to cold-start. Reassure the user instead of a blank hang.
+    const slowTimer = setTimeout(() => setSlowHint(true), 4000);
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -29,17 +35,22 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
+        clearTimeout(slowTimer);
         setError(data.error ?? 'Login failed');
         setLoading(false);
+        setSlowHint(false);
         return;
       }
 
+      clearTimeout(slowTimer);
       sessionStorage.setItem('user', JSON.stringify(data.user));
       const from = searchParams.get('from') ?? '/dashboard';
       router.push(from);
     } catch {
+      clearTimeout(slowTimer);
       setError('Something went wrong. Please try again.');
       setLoading(false);
+      setSlowHint(false);
     }
   };
 
@@ -119,6 +130,12 @@ function LoginForm() {
             <Button variant="primary" type="submit" disabled={loading} block>
               {loading ? 'Signing in…' : 'Sign in'}
             </Button>
+
+            {loading && slowHint && (
+              <p className="text-center text-xs text-text-muted">
+                Waking up the server — this can take up to a minute on the first sign-in.
+              </p>
+            )}
           </form>
 
           <p className="text-center text-sm text-text-muted">

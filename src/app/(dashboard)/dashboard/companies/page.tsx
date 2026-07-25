@@ -65,8 +65,8 @@ export default function CompaniesPage() {
           { label: 'Company', href: '/dashboard/companies' },
         ]}
       >
-        <Link href="/dashboard/settings">
-          <Button variant="primary">Edit in Settings</Button>
+        <Link href="/dashboard/companies/edit">
+          <Button variant="primary">Edit Company</Button>
         </Link>
       </PageHeader>
 

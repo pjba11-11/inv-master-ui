@@ -13,7 +13,7 @@ import { calculateInvoiceTotals } from '@/lib/invoice-calc';
 
 interface Customer { id: number; customerName: string; phone?: string; gstNumber?: string; }
 interface Product { productId: number; productName: string; sellingPrice: number; hsnCode?: string; active?: boolean; }
-interface LineItem { productId: number; quantity: number; unitPrice: number; }
+interface LineItem { productId: number; quantity: number; unitPrice: number; poNumber: string; }
 
 export default function CreateInvoicePage() {
   const router = useRouter();
@@ -21,8 +21,7 @@ export default function CreateInvoicePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
-  const [items, setItems] = useState<LineItem[]>([{ productId: 0, quantity: 1, unitPrice: 0 }]);
-  const [poNumber, setPoNumber] = useState('');
+  const [items, setItems] = useState<LineItem[]>([{ productId: 0, quantity: 1, unitPrice: 0, poNumber: '' }]);
   const [discount, setDiscount] = useState(0);
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -33,10 +32,10 @@ export default function CreateInvoicePage() {
     fetch('/api/products').then(r => r.json()).then(data => setProducts(Array.isArray(data) ? data.filter((p: Product) => p.active !== false) : [])).catch(() => {});
   }, []);
 
-  const addItem = () => setItems(prev => [...prev, { productId: 0, quantity: 1, unitPrice: 0 }]);
+  const addItem = () => setItems(prev => [...prev, { productId: 0, quantity: 1, unitPrice: 0, poNumber: '' }]);
   const removeItem = (i: number) => setItems(prev => prev.filter((_, idx) => idx !== i));
 
-  const updateItem = (i: number, field: keyof LineItem, value: number) => {
+  const updateItem = (i: number, field: 'productId' | 'quantity', value: number) => {
     setItems(prev => prev.map((item, idx) => {
       if (idx !== i) return item;
       if (field === 'productId') {
@@ -45,6 +44,10 @@ export default function CreateInvoicePage() {
       }
       return { ...item, [field]: value };
     }));
+  };
+
+  const updateItemPo = (i: number, value: string) => {
+    setItems(prev => prev.map((item, idx) => (idx === i ? { ...item, poNumber: value } : item)));
   };
 
   const { subtotal, cgst, sgst, grandTotal } = calculateInvoiceTotals(items, discount);
@@ -63,10 +66,13 @@ export default function CreateInvoicePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           customerId,
-          poNumber: poNumber || undefined,
           discount: discount > 0 ? discount : undefined,
           remarks: remarks || undefined,
-          items: validItems.map(i => ({ productId: i.productId, quantity: i.quantity })),
+          items: validItems.map(i => ({
+            productId: i.productId,
+            quantity: i.quantity,
+            poNumber: i.poNumber.trim() || undefined,
+          })),
         }),
       });
       const data = await res.json();
@@ -183,7 +189,8 @@ export default function CreateInvoicePage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-surface-2">
-                    <th className="text-left px-3 py-2 text-xs font-medium text-text-muted uppercase w-1/2">Product</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-text-muted uppercase w-2/5">Product</th>
+                    <th className="text-left px-3 py-2 text-xs font-medium text-text-muted uppercase">PO No.</th>
                     <th className="text-right px-3 py-2 text-xs font-medium text-text-muted uppercase">Qty</th>
                     <th className="text-right px-3 py-2 text-xs font-medium text-text-muted uppercase">Unit Price</th>
                     <th className="text-right px-3 py-2 text-xs font-medium text-text-muted uppercase">Total</th>
@@ -198,6 +205,13 @@ export default function CreateInvoicePage() {
                           value={String(item.productId)}
                           onChange={e => updateItem(i, 'productId', Number(e.target.value))}
                           options={productOptions(i)}
+                        />
+                      </td>
+                      <td className="px-3 py-2 w-40">
+                        <Input
+                          value={item.poNumber}
+                          onChange={e => updateItemPo(i, e.target.value)}
+                          placeholder="PO-2024-001"
                         />
                       </td>
                       <td className="px-3 py-2 w-24">
@@ -230,10 +244,6 @@ export default function CreateInvoicePage() {
             <div className="flex items-center gap-2 mb-1">
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-500/20 text-xs font-semibold text-primary-500">3</span>
               <h3 className="text-base font-semibold text-text-primary">Details</h3>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-muted mb-1">PO Number (optional)</label>
-              <Input value={poNumber} onChange={e => setPoNumber(e.target.value)} placeholder="e.g. PO-2024-001" />
             </div>
             <div>
               <label className="block text-sm font-medium text-text-muted mb-1">Discount (₹)</label>

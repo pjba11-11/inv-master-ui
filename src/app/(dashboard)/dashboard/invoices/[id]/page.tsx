@@ -21,7 +21,6 @@ interface Invoice {
   sgst: number;
   discount: number;
   grandTotal: number;
-  poNumber: string;
   status: InvoiceStatus;
   remarks: string;
   createdAt: string;
@@ -32,6 +31,7 @@ interface LineItem {
   id: number;
   productId: number;
   productName: string;
+  poNumber?: string;
   quantity: number;
   unitPrice: number;
 }
@@ -208,12 +208,6 @@ export default function InvoiceDetailPage() {
             <p className="text-sm text-text-muted">Invoice Date</p>
             <p className="font-medium text-text-primary">{invoice.invoiceDate}</p>
           </div>
-          {invoice.poNumber && (
-            <div>
-              <p className="text-sm text-text-muted">PO Number</p>
-              <p className="font-medium text-text-primary">{invoice.poNumber}</p>
-            </div>
-          )}
           <div>
             <p className="text-sm text-text-muted">Status</p>
             <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge[invoice.status]}`}>
@@ -247,6 +241,7 @@ export default function InvoiceDetailPage() {
             <thead>
               <tr className="bg-surface-2">
                 <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">Product</th>
+                <th className="text-left px-4 py-3 text-xs font-medium text-text-muted uppercase">PO No.</th>
                 <th className="text-center px-4 py-3 text-xs font-medium text-text-muted uppercase">Qty</th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-text-muted uppercase">Unit Price</th>
                 <th className="text-right px-4 py-3 text-xs font-medium text-text-muted uppercase">Amount</th>
@@ -256,6 +251,7 @@ export default function InvoiceDetailPage() {
               {lineItems.map(item => (
                 <tr key={item.id} className="hover:bg-surface-3">
                   <td className="px-4 py-3 text-text-primary">{item.productName}</td>
+                  <td className="px-4 py-3 text-text-primary">{item.poNumber || '—'}</td>
                   <td className="px-4 py-3 text-center text-text-primary">{item.quantity}</td>
                   <td className="px-4 py-3 text-right text-text-primary">₹{Number(item.unitPrice).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right text-text-primary font-medium">₹{(Number(item.quantity) * Number(item.unitPrice)).toFixed(2)}</td>
